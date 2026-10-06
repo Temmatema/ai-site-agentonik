@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>АгентникАИ — ИИ-агенты для бизнеса</title>
+  <meta name="description" content="ИИ-агенты, которые разбирают заявки, отвечают клиентам и собирают отчёты. Плюс ИИ-дизайн и ИИ-реклама для вашего бизнеса." />
+  <meta name="theme-color" content="#EEEBE4" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Onest:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" />
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <header class="nav" id="nav">
+    <a class="brand" href="#hero" aria-label="АгентникАИ — наверх">
+      <span class="brand-mark" aria-hidden="true"><i></i><i></i></span>
+      АгентникАИ
+    </a>
+    <nav class="nav-links" aria-label="Разделы">
+      <a href="#demo">Демо</a>
+      <a href="#products">Продукты</a>
+      <a href="#contact">Контакты</a>
+    </nav>
+    <a class="btn btn-ink" href="#contact">Консультация <span aria-hidden="true">→</span></a>
+  </header>
+
+  <main>
+    <!-- HERO: 3D-сцена «хаос → порядок» -->
+    <section class="hero" id="hero" data-state="chaos">
+      <canvas id="scene" aria-hidden="true"></canvas>
+
+      <div class="hero-copy">
+        <p class="eyebrow">ИИ-агенты и ИИ-продукты для бизнеса</p>
+        <h1>Пока вы разгребаете заявки, <em>агент уже ответил</em></h1>
+        <p class="hero-hint" id="heroHint">Кликните по любой заявке — агент разберёт её.</p>
+      </div>
+
+      <div class="hero-bar">
+        <div class="stats">
+          <div class="stat"><span class="stat-label">Потеряно заявок за месяц</span><span class="stat-val" id="nLost">37</span></div>
+          <div class="stat"><span class="stat-label">Рутина команды в неделю</span><span class="stat-val" id="nHours">62 ч</span></div>
+        </div>
+
+        <div class="toggle" id="toggle" role="radiogroup" aria-label="Как работает бизнес">
+          <span class="toggle-thumb" aria-hidden="true"></span>
+          <button type="button" role="radio" aria-checked="true" id="tgChaos">Вручную</button>
+          <button type="button" role="radio" aria-checked="false" id="tgOrder" tabindex="-1">С агентами</button>
+        </div>
+
+        <p class="bar-note" id="barNote">Заявки теряются, отчёты горят, команда тонет в рутине. <span>Цифры условные.</span></p>
+      </div>
+
+      <!-- Если WebGL недоступен -->
+      <div class="no-webgl" role="note">3D-сцена недоступна в этом браузере, но переключатель ниже работает.</div>
+      <div class="sr" id="live" aria-live="polite"></div>
+    </section>
+
+    <!-- ДЕМО: агент разбирает заявку -->
+    <section class="section demo" id="demo">
+      <div class="wrap">
+        <p class="eyebrow">Попробуйте сами</p>
+        <h2>Отдайте агенту заявку и посмотрите, что он делает</h2>
+        <p class="lead">Выберите пример или напишите свою заявку. Агент прочитает её, определит тип, найдёт ответ, напишет клиенту и заведёт запись в CRM.</p>
+
+        <div class="demo-grid">
+          <div class="panel in-panel">
+            <h3 class="panel-title"><span class="dot dot-coral"></span>Входящее сообщение</h3>
+            <div class="chips" id="demoPresets" role="group" aria-label="Примеры заявок"></div>
+            <label class="sr" for="demoText">Текст заявки</label>
+            <textarea id="demoText" rows="5" placeholder="Напишите заявку клиента своими словами…"></textarea>
+            <div class="in-foot">
+              <button class="btn btn-lime" id="demoRun" type="button">Отдать агенту <span aria-hidden="true">→</span></button>
+              <span class="mini" id="demoChannel">Канал: сайт</span>
+            </div>
+          </div>
+
+          <div class="panel out-panel" id="demoOut">
+            <h3 class="panel-title"><span class="dot dot-lime"></span>Работа агента <span class="timer" id="demoTimer">0,0 с</span></h3>
+            <ol class="steps" id="demoSteps"></ol>
+
+            <div class="reply" id="demoReply" hidden>
+              <span class="reply-label">Ответ клиенту</span>
+              <p id="demoReplyText"></p>
+            </div>
+
+            <div class="crm" id="demoCrm" hidden>
+              <span class="reply-label">Запись в CRM</span>
+              <dl id="demoCrmList"></dl>
+            </div>
+
+            <p class="verdict" id="demoVerdict" hidden></p>
+            <p class="mini demo-note">Это демонстрация: ответы собираются по шаблонам прямо в браузере. Настоящий агент подключается к вашей CRM, прайсу и каналам связи.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ПРОДУКТЫ -->
+    <section class="section products" id="products">
+      <div class="wrap">
+        <p class="eyebrow">Что мы делаем</p>
+        <h2>Три продукта, которые снимают рутину</h2>
+        <div class="cards3">
+          <article class="pcard tilt" data-accent="lime">
+            <span class="pcard-no">01</span>
+            <h3>ИИ-агенты</h3>
+            <p>Отвечают клиентам, разбирают заявки и почту, собирают отчёты, обновляют CRM. Работают круглосуточно и передают вам только важное.</p>
+            <ul><li>Заявки и поддержка</li><li>Отчёты и сводки</li><li>Интеграции с CRM</li></ul>
+          </article>
+          <article class="pcard tilt" data-accent="coral">
+            <span class="pcard-no">02</span>
+            <h3>ИИ-дизайн</h3>
+            <p>Баннеры, карточки товаров и презентации за часы, а не недели. Единый стиль бренда в каждом макете.</p>
+            <ul><li>Карточки для маркетплейсов</li><li>Баннеры и соцсети</li><li>Презентации</li></ul>
+          </article>
+          <article class="pcard tilt" data-accent="ink">
+            <span class="pcard-no">03</span>
+            <h3>ИИ-реклама</h3>
+            <p>Креативы, тексты и A/B-тесты в большом количестве. Находим связки, которые приводят клиентов дешевле.</p>
+            <ul><li>Креативы и тексты</li><li>A/B-тесты</li><li>Аналитика связок</li></ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- КОНТАКТ -->
+    <section class="section contact" id="contact">
+      <div class="wrap contact-wrap">
+        <div>
+          <p class="eyebrow">Начнём</p>
+          <h2>Расскажите, где у вас тонет команда</h2>
+          <p class="lead">Покажем, какие процессы агент возьмёт на себя, и посчитаем выгоду на ваших цифрах.</p>
+        </div>
+        <form class="panel form" id="ctaForm" novalidate>
+          <label>Как к вам обращаться<input name="name" type="text" autocomplete="name" required placeholder="Анна" /></label>
+          <label>Телефон или Telegram<input name="contact" type="text" autocomplete="tel" required placeholder="+7 900 000-00-00" /></label>
+          <label>Что хотите автоматизировать<textarea name="task" rows="3" placeholder="Например: отвечать на заявки с Авито"></textarea></label>
+          <button class="btn btn-ink" type="submit">Отправить заявку <span aria-hidden="true">→</span></button>
+          <p class="mini" id="formMsg" role="status">Это прототип: форма пока никуда не отправляется.</p>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap">© <span id="year">2026</span> АгентникАИ · ИИ-агенты для бизнеса</div>
+  </footer>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
