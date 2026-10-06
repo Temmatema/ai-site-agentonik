@@ -163,19 +163,68 @@
 
     <!-- КОНТАКТ -->
     <section class="section contact" id="contact">
+      <div class="c-deco" aria-hidden="true">
+        <svg class="c-lines" viewBox="0 0 1440 760" preserveAspectRatio="none">
+          <defs><linearGradient id="cg" x1="0" x2="1"><stop offset="0" stop-color="#c4f25a" stop-opacity="0"/><stop offset="0.5" stop-color="#c4f25a" stop-opacity="0.75"/><stop offset="1" stop-color="#c4f25a" stop-opacity="0"/></linearGradient></defs>
+          <path d="M-20 180C140 220 300 330 420 520" fill="none" stroke="#fff" stroke-opacity="0.14"/>
+          <path d="M60 560C300 760 700 790 1030 690" fill="none" stroke="url(#cg)" stroke-width="2"/>
+          <path d="M1100 140C1260 -40 1500 20 1500 220" fill="none" stroke="#fff" stroke-opacity="0.14"/>
+          <path d="M1180 700C1330 690 1440 620 1460 560" fill="none" stroke="#fff" stroke-opacity="0.12"/>
+        </svg>
+        <i class="c-sph c-white"></i><i class="c-sph c-lime"></i><i class="c-cube"></i><i class="c-sph c-lime2"></i>
+      </div>
+
       <div class="wrap contact-wrap">
-        <div>
+        <div class="c-left">
           <p class="eyebrow reveal">Начнём</p>
-          <h2 class="reveal">Расскажите, где у вас тонет команда</h2>
+          <h2 class="reveal">Расскажите, где у вас тонет <em>команда</em></h2>
           <p class="lead reveal">Покажем, какие процессы агент возьмёт на себя, и посчитаем выгоду на ваших цифрах.</p>
+          <ul class="c-feats reveal">
+            <li><span class="c-tile" data-ico="bolt"></span>Ответим<br>в течение 1 часа</li>
+            <li><span class="c-tile" data-ico="calc"></span>Подберём решения<br>под ваш кейс</li>
+            <li><span class="c-tile" data-ico="bars"></span>Рассчитаем<br>потенциальную выгоду</li>
+          </ul>
+          <div class="glass g-clients">
+            <span class="avs"><i style="--a:#f3c9a8;--b:#c98a64">А</i><i style="--a:#d7c7f0;--b:#9a82c7">М</i><i style="--a:#bfe3d0;--b:#6fae8f">И</i></span>
+            <span>Уже 200+ компаний<br><small>внедрили агентов</small></span>
+          </div>
         </div>
-        <form class="panel form reveal" id="ctaForm" novalidate>
-          <label>Как к вам обращаться<input name="name" type="text" autocomplete="name" required placeholder="Анна" /></label>
-          <label>Телефон или Telegram<input name="contact" type="text" autocomplete="tel" required placeholder="+7 900 000-00-00" /></label>
-          <label>Что хотите автоматизировать<textarea name="task" rows="3" placeholder="Например: отвечать на заявки с Авито"></textarea></label>
-          <button class="btn btn-ink" type="submit">Отправить заявку <span aria-hidden="true">→</span></button>
-          <p class="mini" id="formMsg" role="status">Это прототип: форма пока никуда не отправляется.</p>
-        </form>
+
+        <div class="c-right">
+          <div class="glass g-reply"><span class="g-ico" data-ico="tgPlane"></span><span>Обычно отвечаем<br>в течение 1 часа</span></div>
+
+          <form class="cform reveal" id="ctaForm" novalidate>
+            <ol class="steps3" id="steps3" aria-label="Шаги заявки">
+              <li data-s="1"><span>1</span>Контакты</li>
+              <li data-s="2"><span>2</span>Задача</li>
+              <li data-s="3"><span>3</span>Решения</li>
+            </ol>
+
+            <div id="cBody">
+              <label class="cfield"><span class="lbl">Как к вам обращаться</span>
+                <span class="inp"><i data-ico="user"></i><input name="name" type="text" autocomplete="name" placeholder="Анна" /></span>
+                <small class="err" hidden></small></label>
+              <label class="cfield"><span class="lbl">Телефон или Telegram</span>
+                <span class="inp"><i data-ico="phone"></i><input name="contact" type="text" autocomplete="tel" placeholder="+7 900 000-00-00" /></span>
+                <small class="err" hidden></small></label>
+              <label class="cfield"><span class="lbl">Что хотите автоматизировать</span>
+                <span class="inp area"><textarea name="task" rows="3" placeholder="Например: отвечать на заявки с Авито"></textarea></span>
+                <small class="err" hidden></small></label>
+              <div class="c-submit">
+                <button class="btn btn-ink" type="submit">Отправить заявку <span aria-hidden="true">→</span></button>
+                <span class="c-secure"><i data-ico="lock"></i>Ваши данные<br>в безопасности</span>
+              </div>
+              <p class="mini c-foot">После отправки мы свяжемся с вами в течение 1 часа и предложим варианты решения.</p>
+            </div>
+            <div class="c-result" id="cResult" hidden aria-live="polite"></div>
+          </form>
+
+          <div class="glass g-stat">
+            <span class="g-ico" data-ico="bars"></span>
+            <span class="g-stat-t"><small>Среднее сокращение<br>рутинных задач</small><b>до 70%</b></span>
+            <span class="g-arrow" data-ico="arrowUR"></span>
+          </div>
+        </div>
       </div>
     </section>
   </main>

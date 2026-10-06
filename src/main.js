@@ -1,6 +1,7 @@
 import { animate, inView, scroll, stagger } from 'motion';
 import { initDemo } from './demo.js';
 import { initProducts } from './products.js';
+import { initContact } from './contact.js';
 
 const $ = (id) => document.getElementById(id);
 const hero = $('hero'), hint = $('heroHint'), barNote = $('barNote'), live = $('live');
@@ -88,14 +89,7 @@ initDemo();
 
 initProducts();
 
-/* форма: пока прототип, ничего не отправляет */
-$('ctaForm').addEventListener('submit', (e) => {
-  e.preventDefault();
-  const f = e.target;
-  const msg = $('formMsg');
-  if (!f.elements.name.value.trim() || !f.elements.contact.value.trim()) { msg.textContent = 'Укажите имя и как с вами связаться.'; return; }
-  msg.textContent = `Спасибо, ${f.elements.name.value.trim()}! Это прототип: заявка пока никуда не отправляется.`;
-});
+initContact();
 
 /* motion: появление блоков и вступление hero */
 const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
