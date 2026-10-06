@@ -436,3 +436,13 @@ textarea:focus, input:focus { outline: none; border-color: var(--ink); backgroun
 .motion-ready .reveal { opacity: 0; }
 .g-reply .g-ico { position: relative; }
 .g-reply .g-ico::after { content: ''; position: absolute; right: 2px; bottom: 5px; width: 9px; height: 9px; border-radius: 50%; background: #35d07f; box-shadow: 0 0 0 2px #2b2e33; }
+
+/* ---------- «шторка»: контакты выезжают и накладываются на продукты ---------- */
+.products { position: sticky; top: auto; z-index: 1; }
+.products::after { content: ''; position: absolute; inset: 0; z-index: 5; background: #0e1013; opacity: calc(var(--cover, 0) * 0.6); pointer-events: none; }
+.products > .wrap { scale: calc(1 - var(--cover, 0) * 0.05); transform-origin: 50% 100%; }
+.contact { z-index: 2; min-height: 100svh; display: grid; align-content: center; box-shadow: 0 -40px 80px -30px rgba(0, 0, 0, 0.45); }
+.contact-wrap { translate: 0 calc((1 - var(--in, 1)) * 70px); }
+@media (prefers-reduced-motion: reduce) {
+  .products > .wrap, .contact-wrap { scale: none; translate: none; }
+}

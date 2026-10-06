@@ -107,4 +107,20 @@ if (!calm) {
   setTimeout(() => document.querySelectorAll('.reveal').forEach((el) => { if (getComputedStyle(el).opacity === '0' && el.getBoundingClientRect().top < window.innerHeight) el.style.opacity = '1'; }), 4000);
 }
 
+/* «шторка»: блок контактов выезжает и накладывается на продукты */
+if (!calm) {
+  const under = $('products'), over = $('contact');
+  const pin = () => { under.style.top = Math.min(0, window.innerHeight - under.offsetHeight) + 'px'; };
+  pin();
+  if (window.ResizeObserver) new ResizeObserver(pin).observe(under);
+  window.addEventListener('resize', pin);
+  window.addEventListener('load', pin);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(pin);
+  [300, 1200].forEach((ms) => setTimeout(pin, ms)); // подстраховка: стили и шрифты могли доехать позже
+  scroll((p) => {
+    under.style.setProperty('--cover', p.toFixed(3));
+    over.style.setProperty('--in', p.toFixed(3));
+  }, { target: over, offset: ['start end', 'start start'] });
+}
+
 $('year').textContent = new Date().getFullYear();
