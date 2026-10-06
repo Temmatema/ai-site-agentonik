@@ -197,7 +197,7 @@ export function createHeroScene(canvas, hooks = {}) {
   });
   scene.add(agent);
 
-  /* фон: мягкие фигуры на разной глубине + кольца вокруг робота */
+  /* фон: мягкие фигуры на разной глубине */
   const BG = [
     { nx: -0.92, ny: 0.78, z: -3, size: 0.5, type: 'torus', c: '#ff5b3a', o: '#c4f25a' },
     { nx: 0.9, ny: 0.7, z: -3, size: 0.42, type: 'sphere', c: '#f8f5ef', o: '#f8f5ef' },
@@ -223,13 +223,6 @@ export function createHeroScene(canvas, hooks = {}) {
     const mesh = new THREE.Mesh(bgGeo[d.type], mat);
     scene.add(mesh);
     return { ...d, mesh, mat, cA: new THREE.Color(d.c), cB: new THREE.Color(d.o), phase: rand(0, 6.28), spin: new THREE.Vector3(rand(-0.6, 0.6), rand(-0.6, 0.6), rand(-0.4, 0.4)), pos: new THREE.Vector3(), sc: 1 };
-  });
-  const rings = [3.1, 4.3].map((r, i) => {
-    const mat = new THREE.MeshBasicMaterial({ color: C_CORAL.clone(), transparent: true, opacity: i ? 0.28 : 0.5, toneMapped: false });
-    const m = new THREE.Mesh(new THREE.TorusGeometry(r, 0.02, 8, 120), mat);
-    m.position.z = -2.5 - i;
-    scene.add(m);
-    return m;
   });
 
   /* карточки */
@@ -570,13 +563,6 @@ export function createHeroScene(canvas, hooks = {}) {
       m.scale.setScalar(it.sc * pulse);
       it.mat.color.lerpColors(it.cA, it.cB, mood);
     }
-    rings.forEach((r, i) => {
-      r.position.x = 0; r.position.y = L.agentY + 0.5 * L.agentS;
-      r.scale.setScalar(L.agentS * (1 + Math.sin(t * 0.8 + i) * 0.015) * pulse);
-      r.rotation.x = Math.sin(t * 0.3 + i) * 0.5;
-      r.rotation.y = t * (i ? -0.12 : 0.18);
-      r.material.color.lerpColors(C_CORAL, C_LIME, mood);
-    });
   }
 
   function frame() {
