@@ -115,29 +115,49 @@
 
     <!-- ПРОДУКТЫ -->
     <section class="section products" id="products">
+      <div class="prod-deco" aria-hidden="true">
+        <i class="orb p-lime"></i><i class="orb p-white"></i><i class="orb p-cube"></i><i class="orb p-donut"></i>
+      </div>
       <div class="wrap">
-        <p class="eyebrow reveal">Что мы делаем</p>
-        <h2 class="reveal">Три продукта, которые снимают рутину</h2>
-        <div class="cards3">
-          <article class="pcard tilt reveal" data-accent="lime">
+        <div class="prod-head">
+          <div>
+            <p class="eyebrow reveal">Что мы делаем</p>
+            <h2 class="reveal">Три продукта, которые <em>снимают рутину</em></h2>
+          </div>
+          <p class="lead prod-lead reveal">Закрываем ключевые задачи: общение с клиентами, оформление контента и реклама. Наведите курсор или нажмите на продукт, чтобы узнать, как он работает.</p>
+        </div>
+
+        <div class="pcards" id="pcards" role="tablist" aria-label="Продукты">
+          <article class="pcard reveal" role="tab" id="ptab-0" aria-controls="ppanel" aria-selected="true" tabindex="0" data-accent="lime">
+            <span class="pcard-ico" data-ico="chat"></span>
             <span class="pcard-no">01</span>
             <h3>ИИ-агенты</h3>
             <p>Отвечают клиентам, разбирают заявки и почту, собирают отчёты, обновляют CRM. Работают круглосуточно и передают вам только важное.</p>
-            <ul><li>Заявки и поддержка</li><li>Отчёты и сводки</li><li>Интеграции с CRM</li></ul>
+            <ul class="pcard-list"><li>Заявки и поддержка</li><li>Отчёты и сводки</li><li>Интеграции с CRM</li></ul>
+            <span class="btn btn-ink pcard-cta">Посмотреть, как работает <span aria-hidden="true">→</span></span>
           </article>
-          <article class="pcard tilt reveal" data-accent="coral">
+          <article class="pcard reveal" role="tab" id="ptab-1" aria-controls="ppanel" aria-selected="false" tabindex="-1" data-accent="coral">
+            <span class="pcard-ico" data-ico="image"></span>
             <span class="pcard-no">02</span>
             <h3>ИИ-дизайн</h3>
             <p>Баннеры, карточки товаров и презентации за часы, а не недели. Единый стиль бренда в каждом макете.</p>
-            <ul><li>Карточки для маркетплейсов</li><li>Баннеры и соцсети</li><li>Презентации</li></ul>
+            <ul class="pcard-list"><li>Карточки для маркетплейсов</li><li>Баннеры и соцсети</li><li>Презентации</li></ul>
+            <span class="btn btn-ink pcard-cta">Посмотреть, как работает <span aria-hidden="true">→</span></span>
           </article>
-          <article class="pcard tilt reveal" data-accent="ink">
+          <article class="pcard reveal" role="tab" id="ptab-2" aria-controls="ppanel" aria-selected="false" tabindex="-1" data-accent="ink">
+            <span class="pcard-ico" data-ico="megaphone"></span>
             <span class="pcard-no">03</span>
             <h3>ИИ-реклама</h3>
             <p>Креативы, тексты и A/B-тесты в большом количестве. Находим связки, которые приводят клиентов дешевле.</p>
-            <ul><li>Креативы и тексты</li><li>A/B-тесты</li><li>Аналитика связок</li></ul>
+            <ul class="pcard-list"><li>Креативы и тексты</li><li>A/B-тесты</li><li>Аналитика связок</li></ul>
+            <span class="btn btn-ink pcard-cta">Посмотреть, как работает <span aria-hidden="true">→</span></span>
           </article>
         </div>
+
+        <section class="ppanel reveal" id="ppanel" role="tabpanel" aria-labelledby="ptab-0" aria-live="polite">
+          <i class="notch" id="notch" aria-hidden="true"></i>
+          <div class="ppanel-in" id="ppanelIn"></div>
+        </section>
       </div>
     </section>
 

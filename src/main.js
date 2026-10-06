@@ -1,5 +1,6 @@
 import { animate, inView, scroll, stagger } from 'motion';
 import { initDemo } from './demo.js';
+import { initProducts } from './products.js';
 
 const $ = (id) => document.getElementById(id);
 const hero = $('hero'), hint = $('heroHint'), barNote = $('barNote'), live = $('live');
@@ -85,17 +86,7 @@ $('toggle').addEventListener('keydown', (e) => {
 /* демо агента */
 initDemo();
 
-/* лёгкий 3D-наклон карточек продуктов */
-if (!matchMedia('(prefers-reduced-motion: reduce)').matches && matchMedia('(hover: hover)').matches) {
-  document.querySelectorAll('.tilt').forEach((el) => {
-    el.addEventListener('pointermove', (e) => {
-      const r = el.getBoundingClientRect();
-      const x = (e.clientX - r.left) / r.width - 0.5, y = (e.clientY - r.top) / r.height - 0.5;
-      el.style.transform = `rotateY(${(x * 10).toFixed(2)}deg) rotateX(${(-y * 10).toFixed(2)}deg) translateZ(0)`;
-    });
-    el.addEventListener('pointerleave', () => { el.style.transform = ''; });
-  });
-}
+initProducts();
 
 /* форма: пока прототип, ничего не отправляет */
 $('ctaForm').addEventListener('submit', (e) => {
