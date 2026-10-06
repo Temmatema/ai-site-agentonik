@@ -864,3 +864,43 @@ main { overflow-x: clip; }
 /* кубы в продуктах и контактах доворачиваются по мере прокрутки */
 .p-cube { rotate: calc(12deg + var(--sp, 0) * 90deg); }
 .c-cube { rotate: calc(28deg + var(--sp, 0) * 90deg); }
+
+/* ---------- шапка: сжатие при прокрутке, плашка текущего раздела, живой логотип, меню на узких экранах ---------- */
+.nav { transition: top 0.35s ease, padding 0.35s ease, background-color 0.35s ease, box-shadow 0.35s ease; }
+.nav.is-scrolled { top: 8px; padding: 5px 5px 5px 14px; background: rgba(255, 255, 255, 0.86); box-shadow: 0 14px 30px -18px rgba(20, 22, 26, 0.45); }
+.brand { transition: font-size 0.35s ease; }
+.nav.is-scrolled .brand { font-size: 16.5px; }
+.nav.is-scrolled .nav-cta { padding: 9px 16px; }
+/* глаза логотипа: --ex/--ey задаёт nav.js, моргание общее с роботом в подвале */
+.brand-mark i { translate: var(--ex, 0px) var(--ey, 0px); transition: translate 0.2s ease-out; animation: ftblink 5s infinite; }
+.nav-links { position: relative; gap: 2px; }
+.nav-links a:not(.btn) { position: relative; z-index: 1; padding: 8px 14px; border-radius: 999px; }
+.nav-links a[aria-current] { color: var(--ink); }
+.nav-pill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 999px; background: var(--lime); opacity: 0; transition: translate 0.45s cubic-bezier(0.3, 1.2, 0.4, 1), width 0.45s cubic-bezier(0.3, 1.2, 0.4, 1), opacity 0.3s; }
+.nav-cta-m, .nav-burger { display: none; }
+.nav-burger { position: relative; flex: none; width: 42px; height: 42px; border: 0; border-radius: 50%; background: #ecebe6; cursor: pointer; }
+.nav-burger i { position: absolute; left: 12px; right: 12px; top: 50%; height: 2px; border-radius: 2px; background: var(--ink); transition: translate 0.3s, rotate 0.3s; }
+.nav-burger i:first-child { translate: 0 -4px; }
+.nav-burger i:last-child { translate: 0 3px; }
+.nav.is-open .nav-burger i:first-child { translate: 0 -1px; rotate: 45deg; }
+.nav.is-open .nav-burger i:last-child { translate: 0 -1px; rotate: -45deg; }
+@media (max-width: 1000px) {
+  .nav { gap: 8px; }
+  .nav-cta { margin-left: auto; }
+  .nav-burger { display: block; }
+  /* список разделов выпадает под шапкой */
+  .nav-links { display: flex; position: absolute; top: calc(100% + 10px); left: 0; right: 0; flex-direction: column; gap: 4px; padding: 12px; border-radius: 28px; background: rgba(255, 255, 255, 0.97); box-shadow: 0 30px 60px -24px rgba(20, 22, 26, 0.5); font-size: 17px; opacity: 0; translate: 0 -10px; pointer-events: none; visibility: hidden; transition: opacity 0.25s, translate 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0.25s; }
+  .nav.is-open .nav-links { opacity: 1; translate: 0 0; pointer-events: auto; visibility: visible; }
+  .nav-links a:not(.btn) { padding: 13px 16px; border-radius: 16px; color: var(--ink); }
+  .nav-links a[aria-current] { background: var(--lime); }
+  .nav-pill { display: none; }
+  .nav .nav-cta-m { display: flex; justify-content: center; margin-top: 6px; padding: 15px 20px; font-size: 16px; }
+}
+@media (max-width: 560px) {
+  .nav { padding-left: 12px; }
+  .brand { font-size: 16px; gap: 8px; }
+  .nav .nav-cta { padding: 10px 14px; }
+  .nav-arr { display: none; }
+}
+/* на самых узких экранах кнопка заявки остаётся только внутри меню */
+@media (max-width: 370px) { .nav-cta { display: none; } .nav-burger { margin-left: auto; } }

@@ -6,6 +6,7 @@ import { initCalc } from './calc.js';
 import { initCases } from './cases.js';
 import { initFaq } from './faq.js';
 import { initFooter } from './footer.js';
+import { initNav } from './nav.js';
 import { initHero } from './hero.js';
 import { ico } from './icons.js';
 
@@ -42,6 +43,8 @@ initCases();
 initFaq();
 
 initFooter();
+
+initNav();
 
 /* motion: появление блоков и вступление hero */
 const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
