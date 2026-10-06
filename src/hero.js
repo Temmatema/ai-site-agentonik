@@ -42,7 +42,9 @@ export function initHero(scene) {
 
   const calm = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
   const narrow = matchMedia('(max-width: 1000px)');
-  let sc = scene, on = true, nextIdx = VISIBLE, inbox = 37, done = 28, hours = 62, visible = true;
+  // на телефоне по две карточки в списке: робот помещается на экран вместе с ними
+  const vis = narrow.matches ? 2 : VISIBLE;
+  let sc = scene, on = true, nextIdx = vis, inbox = 37, done = 28, hours = 62, visible = true;
 
   /* ---------- разметка карточек ---------- */
   function inEl(lead) {
@@ -59,13 +61,13 @@ export function initHero(scene) {
     const li = document.createElement('li');
     li.className = 'lead lead-out';
     li.innerHTML = `<span class="av" style="--a:${o.av[0]};--b:${o.av[1]}">${o.org ? ico('grid') : initials(o.name)}</span>
-      <div class="lead-main"><b>${o.name}${o.hot ? `<span class="hotf">${ico('fireFill')}</span>` : ''}</b><small>${o.sub}</small></div>
+      <div class="lead-main"><b><span class="lead-nm">${o.name}</span>${o.hot ? `<span class="hotf">${ico('fireFill')}</span>` : ''}</b><small>${o.sub}</small></div>
       <span class="lead-st">${o.st}</span>`;
     return li;
   }
 
-  for (let i = 0; i < VISIBLE; i++) listIn.appendChild(inEl(LEADS[i]));
-  for (let i = 0; i < VISIBLE; i++) listOut.appendChild(outEl(LEADS[(LEADS.length - 1 - i + LEADS.length) % LEADS.length].out));
+  for (let i = 0; i < vis; i++) listIn.appendChild(inEl(LEADS[i]));
+  for (let i = 0; i < vis; i++) listOut.appendChild(outEl(LEADS[(LEADS.length - 1 - i + LEADS.length) % LEADS.length].out));
 
   /* ---------- линии-связи ---------- */
   const mk = (cls, tag = 'path') => { const e = document.createElementNS(NS, tag); e.setAttribute('class', cls); svg.appendChild(e); return e; };
@@ -167,7 +169,7 @@ export function initHero(scene) {
       listIn.appendChild(nl);
       if (!calm) animate(nl, { opacity: [0, 1], y: [24, 0] }, { type: 'spring', stiffness: 180, damping: 20 });
     });
-    inbox = Math.max(on ? VISIBLE : 0, inbox - 1); bump(cntIn, inbox);
+    inbox = Math.max(on ? vis : 0, inbox - 1); bump(cntIn, inbox);
     layout(600);
   }
 
@@ -175,8 +177,9 @@ export function initHero(scene) {
     if (!li || !li.isConnected || li._busy) return;
     li._busy = true;
     const lead = li._lead, fast = on; // с агентами всё в разы быстрее, чем вручную
-    const T = fast ? { in: 0.6, hold: 120, out: 0.6 } : { in: 1.6, hold: 900, out: 1.4 };
-    const flying = !calm && !narrow.matches;
+    const small = narrow.matches;
+    const T = !fast ? { in: 1.6, hold: 900, out: 1.4 } : small ? { in: 0.7, hold: 140, out: 0.7 } : { in: 0.6, hold: 120, out: 0.6 };
+    const flying = !calm;
 
     // красная карточка улетает в визор, на её место снизу приходит новая
     if (flying) {
@@ -207,7 +210,7 @@ export function initHero(scene) {
       g.remove();
     }
     flip(listOut, () => {
-      while (listOut.children.length >= VISIBLE) listOut.lastElementChild.remove();
+      while (listOut.children.length >= vis) listOut.lastElementChild.remove();
       const ne = outEl(lead.out);
       listOut.prepend(ne);
       if (!flying && !calm) animate(ne, { opacity: [0, 1], scale: [0.92, 1], y: [-18, 0] }, { type: 'spring', stiffness: 200, damping: 20 });
@@ -232,10 +235,11 @@ export function initHero(scene) {
     timer = setTimeout(async () => {
       if (visible && !document.hidden && !hero.dataset.covered) {
         const batch = [...listIn.children].filter((li) => !li._busy);
-        await Promise.all(batch.map((li, i) => sleep(i * 170).then(() => on && process(li))));
+        const gap = narrow.matches ? 240 : 170; // на телефоне карточки летят одна за другой чуть реже, чтобы не сливались
+        await Promise.all(batch.map((li, i) => sleep(i * gap).then(() => on && process(li))));
       }
       tick();
-    }, 1100);
+    }, narrow.matches ? 900 : 1100);
   }
 
   function arrivals() {

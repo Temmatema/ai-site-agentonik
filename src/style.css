@@ -582,7 +582,46 @@ textarea:focus, input:focus { outline: none; border-color: var(--ink); backgroun
 .c-lime2 { width: 46px; height: 46px; right: 8%; top: 26%; background: radial-gradient(circle at 36% 28%, #f3fcc4, #c4f25a 55%, #86b126 100%); animation-duration: 6s; }
 .c-cube { position: absolute; width: 84px; height: 84px; left: 5%; top: 38%; border-radius: 24px; background: linear-gradient(145deg, #3d4046, #0d0e10 70%); box-shadow: inset 6px 6px 12px rgba(255, 255, 255, 0.12), inset -8px -10px 16px rgba(0, 0, 0, 0.6), 0 24px 30px -12px #000; rotate: 28deg; animation: drift 9s ease-in-out infinite alternate; }
 
-.footer { background: #0e1013; color: #8d9097; padding: 24px 0 32px; font: 500 13px var(--mono); border-top: 1px solid rgba(255, 255, 255, 0.06); }
+.footer { position: relative; z-index: 2; background: #0e1013; color: #8d9097; padding: 56px 0 30px; border-top: 1px solid rgba(255, 255, 255, 0.06); }
+.ft-top { display: grid; grid-template-columns: auto 1fr; gap: clamp(28px, 5vw, 72px); align-items: center; }
+.ft-hero { display: flex; align-items: center; gap: 20px; }
+/* голова робота: глаза смещаются через --ex/--ey (их задаёт footer.js) */
+.ft-bot { --ex: 0px; --ey: 0px; position: relative; flex: none; width: 92px; height: 78px; border-radius: 28px; background: linear-gradient(#0d0f13, #0d0f13) 11px 17px / calc(100% - 22px) calc(100% - 34px) no-repeat, linear-gradient(160deg, #fff, #dddcd6); box-shadow: 0 18px 30px -16px #000, 0 0 0 1px rgba(255, 255, 255, 0.2) inset; }
+.ft-bot::before { content: ''; position: absolute; left: 50%; top: -16px; width: 3px; height: 16px; background: #5b5f67; translate: -50% 0; }
+.ft-bot::after { content: ''; position: absolute; left: 50%; top: -24px; width: 12px; height: 12px; border-radius: 50%; background: var(--lime); translate: -50% 0; box-shadow: 0 0 14px rgba(196, 242, 90, 0.8); }
+.ft-bot i { position: absolute; top: 30px; width: 11px; height: 18px; border-radius: 6px; background: var(--lime); translate: var(--ex) var(--ey); transition: translate 0.25s cubic-bezier(0.2, 0.8, 0.2, 1); animation: ftblink 4.5s infinite; z-index: 1; }
+.ft-bot i:first-child { left: 26px; }
+.ft-bot i:last-child { right: 26px; }
+@keyframes ftblink { 0%, 46%, 50%, 100% { scale: 1 1; } 48% { scale: 1 0.1; } }
+/* размер облачка фиксирован под самую длинную реплику, чтобы подвал не прыгал при смене текста */
+.ft-say { position: relative; margin: 0; display: flex; align-items: center; box-sizing: border-box; width: 26ch; min-height: calc(3 * 1.35em + 26px); padding: 12px 16px; border-radius: 18px 18px 18px 6px; background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 255, 255, 0.1); color: #e6e3dc; font: 600 15px/1.35 var(--body); }
+.ft-soc { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.ft-s { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 22px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.09); color: #fff; text-decoration: none; transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), background 0.3s, color 0.3s, border-color 0.3s; }
+.ft-ico { flex: none; width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; background: rgba(255, 255, 255, 0.08); color: var(--lime); font: 800 14px var(--display); transition: background 0.3s, color 0.3s, rotate 0.4s cubic-bezier(0.3, 1.4, 0.4, 1); }
+.ft-ico .i { width: 22px; height: 22px; }
+.ft-tg .i { fill: currentColor; stroke: none; }
+.ft-t { display: grid; min-width: 0; }
+.ft-t b { font: 700 15.5px var(--body); }
+.ft-t small { font-size: 13px; color: #8d9097; transition: color 0.3s; }
+.ft-s > i { margin-left: auto; font-style: normal; opacity: 0.4; transition: opacity 0.3s, translate 0.3s; }
+.ft-s:hover, .ft-s:focus-visible, .ft-s.is-hint { transform: translateY(-4px); background: var(--lime); border-color: var(--lime); color: var(--ink); }
+.ft-s:hover .ft-ico, .ft-s:focus-visible .ft-ico, .ft-s.is-hint .ft-ico { background: var(--ink); color: var(--lime); rotate: -8deg; }
+.ft-s:hover small, .ft-s:focus-visible small, .ft-s.is-hint small { color: #3d4a1c; }
+.ft-s:hover > i, .ft-s:focus-visible > i, .ft-s.is-hint > i { opacity: 1; translate: 3px -3px; }
+.ft-s:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+.ft-bottom { display: flex; align-items: center; gap: 16px 28px; flex-wrap: wrap; margin-top: 44px; padding-top: 22px; border-top: 1px solid rgba(255, 255, 255, 0.08); font: 500 13px var(--mono); }
+.ft-bottom .brand { color: #fff; }
+.ft-bottom .brand-mark { background: #23262b; }
+.ft-nav { display: flex; gap: 6px 20px; flex-wrap: wrap; }
+.ft-nav a { color: #8d9097; text-decoration: none; transition: color 0.2s; }
+.ft-nav a:hover { color: #fff; }
+.ft-copy { margin-left: auto; }
+@media (max-width: 1000px) {
+  .ft-top { grid-template-columns: 1fr; }
+  .ft-soc { grid-template-columns: 1fr; }
+  .ft-copy { margin-left: 0; width: 100%; }
+  .ft-say { width: auto; flex: 1; min-height: calc(4 * 1.35em + 26px); }
+}
 
 /* ---------- адаптив ---------- */
 @media (max-width: 1000px) {
@@ -677,4 +716,29 @@ main { overflow-x: clip; }
   .seg { order: -1; margin-top: 46px; }
   .h-cta { order: 5; }
   .h-stat-r { margin-left: 0; }
+}
+@media (max-width: 1000px) {
+  /* робот остаётся на первом экране, под ним входящие и обработанные. Карточки одной высоты, чтобы списки не прыгали */
+  .h-stage { height: 320px; margin: -6px 0; }
+  .lead-in { min-height: 76px; }
+  .lead-out { min-height: 92px; }
+}
+@media (max-width: 1000px) {
+  /* имя и описание лида в одну строку с многоточием: высота карточки, а с ней и всего экрана, не меняется */
+  .lead-out .lead-main, .lead-out .lead-main b { min-width: 0; }
+  .lead-nm, .lead-out small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lead-out { min-height: 76px; }
+}
+@media (max-width: 1000px) {
+  /* жёсткие размеры: высота карточек и списков не зависит от текста, панели не дёргаются при смене заявок */
+  .lead-in, .lead-out { height: 76px; min-height: 0; }
+  .h-list { height: 164px; }
+  .lead-in .lead-main { min-width: 0; }
+  .lead-in p { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* размытие фона под панелями поверх постоянно рисующейся 3D-сцены на телефонах даёт мерцание: заменяем плотной заливкой */
+  .h-panel::before, .h-bar { backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .h-panel::before { background: rgba(255, 255, 255, 0.78); }
+  .h-bar { background: rgba(255, 255, 255, 0.96); }
+  .hero[data-mode='off'] .h-panel::before { background: rgba(34, 37, 42, 0.9); }
+  .hero[data-mode='off'] .h-bar { background: rgba(28, 31, 36, 0.96); }
 }

@@ -54,7 +54,8 @@ export function createHero3D(canvas, hero, stage) {
   const reduce = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
 
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  // на телефоне холст высотой во весь длинный экран: плотность пикселей ниже, чтобы кадр успевал рисоваться
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, matchMedia('(max-width: 1000px)').matches ? 1.5 : 2));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.04;
 
@@ -152,7 +153,9 @@ export function createHero3D(canvas, hero, stage) {
   function layout() {
     const hr = hero.getBoundingClientRect();
     const W = Math.max(1, Math.round(hr.width)), H = Math.max(1, Math.round(hr.height));
-    renderer.setSize(W, H, false);
+    // смена размера очищает холст, поэтому меняем его только по делу и сразу перерисовываем (см. конец функции)
+    const resized = W !== L.W || H !== L.H;
+    if (resized) renderer.setSize(W, H, false);
     camera.aspect = W / H; camera.updateProjectionMatrix();
     const halfH = Math.tan((FOV / 2) * Math.PI / 180) * CAM_Z, halfW = halfH * camera.aspect;
     Object.assign(L, { W, H, halfW, halfH });
@@ -168,6 +171,7 @@ export function createHero3D(canvas, hero, stage) {
       d.pos.set(d.nx * halfW * persp, d.ny * halfH * persp, d.z);
       d.sc = d.size * (halfH / 3.7);
     });
+    if (resized && t > 0) { update(0); renderer.render(scene, camera); }
   }
 
   let bob = 0;

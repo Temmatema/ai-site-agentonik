@@ -4,6 +4,7 @@ import { initProducts } from './products.js';
 import { initContact } from './contact.js';
 import { initCalc } from './calc.js';
 import { initFaq } from './faq.js';
+import { initFooter } from './footer.js';
 import { initHero } from './hero.js';
 import { ico } from './icons.js';
 
@@ -36,6 +37,8 @@ initContact();
 initCalc();
 
 initFaq();
+
+initFooter();
 
 /* motion: появление блоков и вступление hero */
 const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;

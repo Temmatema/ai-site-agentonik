@@ -301,9 +301,14 @@ export function initProducts() {
     render();
     play();
   }
-  // смена продукта: старая схема уходит вверх, новая приходит снизу. Страницу не прокручиваем
+  // на телефоне карточки стоят столбиком, и схема оказывается далеко внизу: подводим её под взгляд
+  function showPanel() {
+    if (!narrow.matches) return;
+    window.scrollTo({ top: window.scrollY + panel.getBoundingClientRect().top - 84, behavior: calm ? 'auto' : 'smooth' });
+  }
+  // смена продукта: старая схема уходит вверх, новая приходит снизу. На широком экране страницу не прокручиваем
   async function select(i) {
-    if (i === cur) return;
+    if (i === cur) { showPanel(); return; }
     const my = ++selTok;
     cur = i; token++;
     cards.forEach((c, k) => { c.setAttribute('aria-selected', String(k === i)); c.tabIndex = k === i ? 0 : -1; });
@@ -311,6 +316,7 @@ export function initProducts() {
     if (!calm) await animate(inner, { opacity: [1, 0], y: [0, -10] }, { duration: 0.18, ease: 'easeIn' }).finished;
     if (my !== selTok) return;
     render(); hideSteps(); placeNotch();
+    showPanel();
     if (!calm) animate(inner, { opacity: [0, 1], y: [16, 0] }, { duration: 0.45, ease: [0.2, 0.8, 0.2, 1] });
     play();
   }

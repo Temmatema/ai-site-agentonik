@@ -293,8 +293,34 @@
     </section>
   </main>
 
-  <footer class="footer">
-    <div class="wrap">© <span id="year">2026</span> АгентникАИ · ИИ-агенты для бизнеса</div>
+  <footer class="footer" id="footer">
+    <div class="wrap">
+      <div class="ft-top">
+        <div class="ft-hero">
+          <div class="ft-bot" id="ftBot" aria-hidden="true"><i></i><i></i></div>
+          <p class="ft-say" id="ftSay">Загляните к нам в соцсети. Я там тоже есть</p>
+        </div>
+        <!-- TODO: подставить настоящие ссылки на соцсети вместо href="#" -->
+        <nav class="ft-soc" aria-label="Мы в соцсетях">
+          <a class="ft-s" href="#" data-say="В Telegram отвечаем быстрее всего">
+            <span class="ft-ico ft-tg" data-ico="tgPlane"></span><span class="ft-t"><b>Telegram</b><small>написать нам</small></span><i aria-hidden="true">↗</i>
+          </a>
+          <a class="ft-s" href="#" data-say="В Instagram показываем, как всё устроено изнутри">
+            <span class="ft-ico ft-ig"><svg class="i" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17" cy="7" r="0.6" fill="currentColor"/></svg></span><span class="ft-t"><b>Instagram</b><small>закулисье</small></span><i aria-hidden="true">↗</i>
+          </a>
+          <a class="ft-s" href="#" data-say="Во ВКонтакте делимся новостями и кейсами">
+            <span class="ft-ico ft-vk">VK</span><span class="ft-t"><b>ВКонтакте</b><small>новости и кейсы</small></span><i aria-hidden="true">↗</i>
+          </a>
+        </nav>
+      </div>
+      <div class="ft-bottom">
+        <a class="brand" href="#hero" aria-label="АгентникАИ — наверх"><span class="brand-mark" aria-hidden="true"><i></i><i></i></span>АгентникАИ</a>
+        <nav class="ft-nav" aria-label="Разделы">
+          <a href="#demo">Как это работает</a><a href="#calc">Калькулятор</a><a href="#products">Продукты</a><a href="#faq">Вопросы</a><a href="#contact">Контакты</a>
+        </nav>
+        <span class="ft-copy">© <span id="year">2026</span> АгентникАИ</span>
+      </div>
+    </div>
   </footer>
 
   <script type="module" src="/src/main.js"></script>
