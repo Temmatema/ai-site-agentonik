@@ -141,6 +141,24 @@ function blobShadowTexture() {
   return new THREE.CanvasTexture(cv);
 }
 
+function roundedRectShape(w, h, r) {
+  const s = new THREE.Shape();
+  const x = -w / 2, y = -h / 2;
+  s.moveTo(x + r, y);
+  s.lineTo(x + w - r, y);
+  s.absarc(x + w - r, y + r, r, -Math.PI / 2, 0, false);
+  s.lineTo(x + w, y + h - r);
+  s.absarc(x + w - r, y + h - r, r, 0, Math.PI / 2, false);
+  s.lineTo(x + r, y + h);
+  s.absarc(x + r, y + h - r, r, Math.PI / 2, Math.PI, false);
+  s.lineTo(x, y + r);
+  s.absarc(x + r, y + r, r, Math.PI, Math.PI * 1.5, false);
+  return s;
+}
+
+const TAU = Math.PI * 2;
+const wrapAngle = (a) => ((a + Math.PI) % TAU + TAU) % TAU - Math.PI;
+
 /* ---------- сцена ---------- */
 export function createHeroScene(canvas, hooks = {}) {
   const reduce = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -175,10 +193,12 @@ export function createHeroScene(canvas, hooks = {}) {
   blob.rotation.x = -Math.PI / 2;
   scene.add(blob);
 
-  /* робот */
+  /* робот: компактная «игрушка». Белая голова-капсула со встроенным экраном и гладкое тело-кокон */
   const clay = new THREE.MeshPhysicalMaterial({ color: 0xf6f4ee, roughness: 0.62, clearcoat: 0.08, clearcoatRoughness: 0.8, sheen: 0.5, sheenRoughness: 0.8, sheenColor: new THREE.Color(0xffffff) });
   const dark = new THREE.MeshStandardMaterial({ color: 0x1c1e23, roughness: 0.55 });
-  const visorMat = new THREE.MeshPhysicalMaterial({ color: 0x0f1115, roughness: 0.12, metalness: 0.2, clearcoat: 1, clearcoatRoughness: 0.05 });
+  const accent = new THREE.MeshStandardMaterial({ color: 0xc4f25a, roughness: 0.6 });
+  const visorMat = new THREE.MeshPhysicalMaterial({ color: 0x0f1115, roughness: 0.14, metalness: 0.2, clearcoat: 1, clearcoatRoughness: 0.05, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+  const bezelMat = new THREE.MeshStandardMaterial({ color: 0xe2dfd8, roughness: 0.7, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
   const glow = new THREE.MeshBasicMaterial({ color: C_CORAL.clone(), toneMapped: false });
   const haloMat = new THREE.SpriteMaterial({ map: haloTexture(), color: C_CORAL.clone(), transparent: true, opacity: 0.5, depthWrite: false, toneMapped: false });
   const halo = (parent, x, y, z, size) => {
@@ -192,66 +212,64 @@ export function createHeroScene(canvas, hooks = {}) {
   const rig = new THREE.Group(); // сюда применяем «сплющивание» при проглатывании заявки
   agent.add(rig);
   const add = (mesh, parent = rig) => { parent.add(mesh); return mesh; };
-  const sph = new THREE.SphereGeometry(1, 48, 32);
-  const ell = (mat, sx, sy, sz) => { const m = new THREE.Mesh(sph, mat); m.scale.set(sx, sy, sz); return m; };
 
-  // тело-«яйцо», шея
-  const body = add(ell(clay, 0.95, 1.15, 0.9));
-  body.position.y = -1.05;
-  add(new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.55, 0.32, 32), dark)).position.y = 0.1;
-  const neckRing = add(new THREE.Mesh(new THREE.TorusGeometry(0.56, 0.08, 16, 48), dark));
-  neckRing.rotation.x = Math.PI / 2; neckRing.position.y = 0.06;
+  // тело: мягкая капсула, чуть выше головы
+  const body = add(new THREE.Mesh(new THREE.CapsuleGeometry(0.92, 0.3, 16, 40), clay));
+  body.position.y = -1.13;
+  add(new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.45, 0.34, 32), dark)).position.y = 0.03;
 
-  // голова
+  // голова: цельная капсула, чуть шире тела
   const head = new THREE.Group();
-  head.position.y = 1.05;
+  head.position.y = 0.95;
   rig.add(head);
-  add(new THREE.Mesh(new RoundedBoxGeometry(2.5, 1.8, 1.8, 10, 0.8), clay), head);
-  const visor = add(ell(visorMat, 1.08, 0.7, 0.36), head);
-  visor.position.set(0, 0.02, 0.62);
-  const shine = add(new THREE.Mesh(new THREE.PlaneGeometry(1.1, 0.22), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.08, depthWrite: false })), head);
-  shine.position.set(-0.25, 0.42, 0.985); shine.rotation.z = 0.12;
+  add(new THREE.Mesh(new RoundedBoxGeometry(2.3, 1.7, 1.5, 12, 0.5), clay), head);
 
-  const eyeL = new THREE.Mesh(new THREE.CapsuleGeometry(0.1, 0.26, 6, 12), glow);
+  // экран встроен в переднюю грань, без выступающей массы
+  const bezel = add(new THREE.Mesh(new THREE.ShapeGeometry(roundedRectShape(1.82, 1.06, 0.4), 24), bezelMat), head);
+  bezel.position.z = 0.752;
+  const screen = add(new THREE.Mesh(new THREE.ShapeGeometry(roundedRectShape(1.72, 0.96, 0.34), 24), visorMat), head);
+  screen.position.z = 0.756;
+  const shine = add(new THREE.Mesh(new THREE.PlaneGeometry(1.1, 0.16), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.07, depthWrite: false })), head);
+  shine.position.set(-0.25, 0.32, 0.762); shine.rotation.z = 0.1;
+
+  // лицо: два маленьких вертикальных глаза и тонкая улыбка
+  const eyeL = new THREE.Mesh(new THREE.CapsuleGeometry(0.07, 0.2, 6, 12), glow);
   const eyeR = eyeL.clone();
-  eyeL.position.set(-0.42, 0.12, 0.96);
-  eyeR.position.set(0.42, 0.12, 0.96);
+  eyeL.position.set(-0.3, 0.1, 0.78);
+  eyeR.position.set(0.3, 0.1, 0.78);
   head.add(eyeL, eyeR);
-  const haloEyeL = halo(head, -0.42, 0.12, 1.0, 1.0);
-  const haloEyeR = halo(head, 0.42, 0.12, 1.0, 1.0);
-  const mouth = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.04, 8, 24, Math.PI), glow);
-  mouth.position.set(0, -0.22, 0.96);
+  const haloEyeL = halo(head, -0.3, 0.1, 0.8, 0.6);
+  const haloEyeR = halo(head, 0.3, 0.1, 0.8, 0.6);
+  const mouth = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.028, 8, 24, Math.PI), glow);
+  mouth.position.set(0, -0.14, 0.78);
   head.add(mouth);
 
-  // наушники со светящимся кольцом
+  // боковые накладки (без колец)
   for (const sx of [-1, 1]) {
-    const pad = add(new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.4, 40), clay), head);
-    pad.rotation.z = Math.PI / 2; pad.position.set(sx * 1.3, 0, 0);
-    const inset = add(new THREE.Mesh(new THREE.CylinderGeometry(0.27, 0.27, 0.44, 32), dark), head);
-    inset.rotation.z = Math.PI / 2; inset.position.set(sx * 1.3, 0, 0);
-    const ring = add(new THREE.Mesh(new THREE.TorusGeometry(0.31, 0.045, 12, 40), glow), head);
-    ring.rotation.y = Math.PI / 2; ring.position.set(sx * 1.52, 0, 0);
-    halo(head, sx * 1.56, 0, 0, 1.1);
+    const pad = add(new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.24, 36), clay), head);
+    pad.rotation.z = Math.PI / 2; pad.position.set(sx * 1.2, 0, 0);
+    const cap = add(new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.26, 32), accent), head);
+    cap.rotation.z = Math.PI / 2; cap.position.set(sx * 1.2, 0, 0);
   }
 
-  // антенна
-  const antenna = add(new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.45, 12), dark), head);
-  antenna.position.y = 1.1;
-  const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.14, 20, 20), glow);
-  bulb.position.y = 1.4;
+  // короткая антенна
+  const antenna = add(new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.3, 12), dark), head);
+  antenna.position.y = 1.0;
+  const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.11, 20, 20), glow);
+  bulb.position.y = 1.2;
   head.add(bulb);
-  const haloBulb = halo(head, 0, 1.4, 0, 0.9);
+  const haloBulb = halo(head, 0, 1.2, 0, 0.7);
 
   // счётчик на груди
   const chestCv = document.createElement('canvas');
   chestCv.width = 256; chestCv.height = 128;
   const chestTex = new THREE.CanvasTexture(chestCv);
   chestTex.colorSpace = THREE.SRGBColorSpace;
-  const chest = new THREE.Mesh(new RoundedBoxGeometry(1.05, 0.5, 0.12, 4, 0.06), dark);
-  chest.position.set(0, -0.75, 0.86);
+  const chest = new THREE.Mesh(new RoundedBoxGeometry(0.8, 0.42, 0.1, 4, 0.05), dark);
+  chest.position.set(0, -0.8, 0.88);
   rig.add(chest);
-  const chestFace = new THREE.Mesh(new THREE.PlaneGeometry(0.96, 0.42), new THREE.MeshBasicMaterial({ map: chestTex, toneMapped: false }));
-  chestFace.position.set(0, -0.75, 0.925);
+  const chestFace = new THREE.Mesh(new THREE.PlaneGeometry(0.74, 0.36), new THREE.MeshBasicMaterial({ map: chestTex, toneMapped: false }));
+  chestFace.position.set(0, -0.8, 0.935);
   rig.add(chestFace);
   let chestN = 1284, chestLast = 0;
   function drawChest(txt, color) {
@@ -263,33 +281,25 @@ export function createHeroScene(canvas, hooks = {}) {
     chestTex.needsUpdate = true;
   }
 
-  // руки: плечо со светящимся кольцом, два сегмента, кисть
-  const boneGeo = new THREE.CylinderGeometry(0.15, 0.15, 1, 18);
+  // руки: простые округлые сегменты и маленькая рукавица-«грипер»
+  const boneGeo = new THREE.CylinderGeometry(0.13, 0.13, 1, 18);
   const UP = new THREE.Vector3(0, 1, 0);
   const vE = new THREE.Vector3(), vH = new THREE.Vector3(), vD = new THREE.Vector3();
   const arms = [-1, 1].map((sx) => {
-    const S = new THREE.Vector3(sx * 0.95, -0.55, 0.3);
-    add(new THREE.Mesh(new THREE.SphereGeometry(0.3, 24, 20), clay)).position.copy(S);
-    const ring = add(new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.05, 12, 40), glow));
-    ring.rotation.y = Math.PI / 2; ring.position.set(sx * 1.24, -0.55, 0.3);
-    halo(rig, sx * 1.28, -0.55, 0.3, 1.0);
+    const S = new THREE.Vector3(sx * 0.88, -0.55, 0.25);
+    add(new THREE.Mesh(new THREE.SphereGeometry(0.24, 24, 20), clay)).position.copy(S);
     const upper = add(new THREE.Mesh(boneGeo, clay));
     const fore = add(new THREE.Mesh(boneGeo, clay));
-    const elbow = add(new THREE.Mesh(new THREE.SphereGeometry(0.17, 20, 16), clay));
+    const elbow = add(new THREE.Mesh(new THREE.SphereGeometry(0.14, 20, 16), clay));
     const hand = new THREE.Group();
     rig.add(hand);
     const glove = sx > 0 ? dark : clay;
-    hand.add(new THREE.Mesh(new THREE.SphereGeometry(0.27, 24, 20), glove));
-    const thumb = new THREE.Mesh(new THREE.CapsuleGeometry(0.075, 0.14, 6, 10), glove);
-    thumb.position.set(sx * 0.24, 0.12, 0.05); thumb.rotation.z = -sx * 0.7;
+    const palm = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 20), glove);
+    palm.scale.set(0.23, 0.27, 0.2);
+    hand.add(palm);
+    const thumb = new THREE.Mesh(new THREE.SphereGeometry(0.085, 14, 12), glove);
+    thumb.position.set(sx * 0.2, 0.05, 0.06);
     hand.add(thumb);
-    if (sx > 0) {
-      [-0.11, 0, 0.11].forEach((x, i) => {
-        const f = new THREE.Mesh(new THREE.CapsuleGeometry(0.07, 0.16, 6, 10), glove);
-        f.position.set(x, 0.32, 0); f.rotation.z = (i - 1) * -0.22;
-        hand.add(f);
-      });
-    }
     return { sx, S, upper, fore, elbow, hand };
   });
 
@@ -301,11 +311,11 @@ export function createHeroScene(canvas, hooks = {}) {
     mesh.quaternion.setFromUnitVectors(UP, vD.divideScalar(len));
   }
   function solveArm(arm, hx, hy) {
-    const { S, sx } = arm, l1 = 0.8, l2 = 0.8;
+    const { S, sx } = arm, l1 = 0.62, l2 = 0.62;
     let dx = hx - S.x, dy = hy - S.y, d = Math.hypot(dx, dy);
     const max = l1 + l2 - 0.02;
     if (d > max) { dx *= max / d; dy *= max / d; d = max; }
-    d = Math.max(d, 0.35);
+    d = Math.max(d, 0.3);
     const ux = dx / d, uy = dy / d;
     const a = (l1 * l1 - l2 * l2 + d * d) / (2 * d), h = Math.sqrt(Math.max(0, l1 * l1 - a * a));
     const ex = S.x + ux * a, ey = S.y + uy * a, px = -uy, py = ux;
@@ -338,10 +348,12 @@ export function createHeroScene(canvas, hooks = {}) {
     return { ...d, mesh: sp, mat, cA: new THREE.Color(d.c), cB: new THREE.Color(d.o), phase: rand(0, 6.28), pos: new THREE.Vector3(), sc: 1 };
   });
 
+  const sph = new THREE.SphereGeometry(1, 32, 24);
   const matte = (color) => new THREE.MeshStandardMaterial({ color, roughness: 0.7, metalness: 0 });
   const CRISP = [
     { nx: -0.5, ny: -0.02, z: -1.2, size: 0.5, geo: new RoundedBoxGeometry(1, 1, 1, 5, 0.3), c: '#1c1e23', o: '#1c1e23' },
     { nx: 0.42, ny: -0.52, z: -1.0, size: 0.26, geo: sph, c: '#f6f4ee', o: '#f6f4ee' },
+    { nx: 0.5, ny: -0.22, z: -1.3, size: 0.46, geo: sph.clone().scale(1, 0.8, 0.8), c: '#ff5b3a', o: '#c4f25a' },
   ];
   const bgItems = CRISP.map((d) => {
     const mat = matte(d.c);
@@ -349,17 +361,6 @@ export function createHeroScene(canvas, hooks = {}) {
     scene.add(mesh);
     return { ...d, mesh, mat, cA: new THREE.Color(d.c), cB: new THREE.Color(d.o), phase: rand(0, 6.28), spin: new THREE.Vector3(rand(-0.5, 0.5), rand(-0.5, 0.5), rand(-0.3, 0.3)), pos: new THREE.Vector3(), sc: 1 };
   });
-
-  // лаймовый эллипсоид на тонкой орбите
-  const orbit = new THREE.Group();
-  orbit.rotation.set(1.15, 0.25, -0.45);
-  scene.add(orbit);
-  const orbitLine = new THREE.Mesh(new THREE.TorusGeometry(3.4, 0.009, 6, 160), new THREE.MeshBasicMaterial({ color: C_LIME.clone(), transparent: true, opacity: 0.3, toneMapped: false }));
-  orbit.add(orbitLine);
-  const orbMat = matte(0xc4f25a);
-  const orbBody = new THREE.Mesh(sph, orbMat);
-  orbBody.scale.set(0.5, 0.4, 0.4);
-  orbit.add(orbBody);
 
   /* карточки */
   const cardGeo = new THREE.PlaneGeometry(CW, CH);
@@ -383,7 +384,7 @@ export function createHeroScene(canvas, hooks = {}) {
     scene.add(mesh);
     return {
       i, mesh, mat, active: true, done: false, slot: -1, hover: 0, hovered: false,
-      phase: rand(0, 6.28), blend: 1, push: new THREE.Vector2(),
+      phase: rand(0, 6.28), placed: false, push: new THREE.Vector2(),
       base: new THREE.Vector3(), baseRot: 0, seg: null, queue: [],
     };
   });
@@ -393,7 +394,7 @@ export function createHeroScene(canvas, hooks = {}) {
   const L = { cs: 1, slots: [], agentS: 1, agentY: 0, mouth: new THREE.Vector3(0, 0, 1.4), halfW: 6, halfH: 3.7, portrait: false };
 
   function placeAgent(topY, bottomY) {
-    const ext = 4.72, mid = 0.16; // высота робота в мире и смещение его центра от начала координат
+    const ext = 4.5, mid = 0.05; // высота робота в мире и смещение его центра от начала координат
     const s = clamp((topY - bottomY) / ext, 0.35, 1.25);
     L.agentS = s;
     L.agentY = (topY + bottomY) / 2 - mid * s;
@@ -480,7 +481,6 @@ export function createHeroScene(canvas, hooks = {}) {
     seg.from = new THREE.Vector3(); seg.fromRot = new THREE.Vector3();
     seg.delay = (seg.delay || 0);
     c.seg = seg;
-    c.blend = 0;
   }
   function queueSeg(c, seg) { c.queue.push(seg); if (!c.seg) startSeg(c, c.queue.shift()); }
 
@@ -490,7 +490,7 @@ export function createHeroScene(canvas, hooks = {}) {
     c.slot = slotCounter++;
     const slotAt = c.slot;
     queueSeg(c, {
-      delay, dur: 0.5 / speed, ease: easeInCubic,
+      delay, dur: 0.62 / speed, ease: easeInOut,
       to: L.mouth.clone(), toRotZ: 0, toRotY: 0, toSc: 0.22, lift: 0.9,
       onDone() {
         c.done = true; squash = 1;
@@ -499,7 +499,7 @@ export function createHeroScene(canvas, hooks = {}) {
       },
     });
     queueSeg(c, {
-      delay: 0, dur: 0.75 / speed, ease: easeOutBack,
+      delay: 0, dur: 0.95 / speed, ease: easeOutBack,
       get to() { return L.slots[slotAt] ? L.slots[slotAt].clone() : new THREE.Vector3(); },
       toRotZ: 0, toRotY: 0, spin: Math.PI * 2, toSc: null, lift: 0.5,
       onStart() { c.mesh.visible = c.active; },
@@ -513,7 +513,7 @@ export function createHeroScene(canvas, hooks = {}) {
     c.busy = true;
     c.resetting = true;
     queueSeg(c, {
-      delay, dur: 0.8 / speed, ease: easeInOut,
+      delay, dur: 1.0 / speed, ease: easeInOut,
       get to() { return c.base.clone(); }, toRotZ: c.baseRot, toRotY: 0, toSc: CHAOS_SC, spin: -Math.PI * 2, lift: 0,
       onStart() { c.mat.map = ticketTex(c.i, 'chaos'); c.done = false; c.slot = -1; emitProgress(); },
       onDone() { c.busy = false; c.resetting = false; },
@@ -530,26 +530,6 @@ export function createHeroScene(canvas, hooks = {}) {
       mode = 'chaos';
     }
   }
-
-  /* прокрутка страницы управляет количеством разобранных заявок */
-  const isOn = (c) => (c.done || c.busy) && !c.resetting;
-  function setProcessedCount(n) {
-    const act = activeCards();
-    n = clamp(n, 0, act.length);
-    const on = act.filter(isOn);
-    while (on.length < n) {
-      const c = act.find((x) => !isOn(x) && !x.busy);
-      if (!c) break;
-      processCard(c, 0);
-      on.push(c);
-    }
-    while (on.length > n) {
-      on.sort((a, b) => a.slot - b.slot);
-      resetCard(on.pop(), 0);
-    }
-    slotCounter = n;
-  }
-  let scrollP = 0, scrollShown = 0;
 
   /* указатель */
   const ray = new THREE.Raycaster();
@@ -594,41 +574,50 @@ export function createHeroScene(canvas, hooks = {}) {
 
   function idleCard(c, dt) {
     const m = c.mesh;
-    c.blend = Math.min(1, c.blend + dt * 2.2);
-    const b = c.blend;
-    let sc = 1, x, y, z = 0, rx = 0, ry = 0, rz;
+    let sc, x, y, z = 0, rx = 0, ry = 0, rz;
     if (c.done) {
       const s = L.slots[c.slot] || c.base;
       x = s.x; y = s.y; rz = 0; sc = L.cs;
-      ry = pointer.x * 0.08 * b; rx = -pointer.y * 0.05 * b;
+      ry = pointer.x * 0.08; rx = -pointer.y * 0.05;
     } else {
       const amp = reduce ? 0 : 1;
-      let ox = Math.sin(t * 0.8 + c.phase) * 0.14 + Math.sin(t * 24 + c.phase * 7) * 0.014;
-      let oy = Math.cos(t * 0.7 + c.phase * 1.3) * 0.12 + Math.cos(t * 27 + c.phase * 5) * 0.014;
+      const ox = Math.sin(t * 0.7 + c.phase) * 0.14, oy = Math.cos(t * 0.6 + c.phase * 1.3) * 0.12;
       let px = 0, py = 0;
       if (pointer.inside && !reduce) {
         const dx = c.base.x - pointer.wx, dy = c.base.y - pointer.wy, d = Math.hypot(dx, dy) || 1;
-        if (d < 2.6) { const f = ((2.6 - d) / 2.6) * 1.0; px = (dx / d) * f; py = (dy / d) * f; }
+        if (d < 2.6) { const f = ((2.6 - d) / 2.6) * 0.9; px = (dx / d) * f; py = (dy / d) * f; }
       }
-      c.push.x += (px - c.push.x) * Math.min(1, dt * 6);
-      c.push.y += (py - c.push.y) * Math.min(1, dt * 6);
-      x = c.base.x + (ox + c.push.x) * amp * b + c.push.x * (1 - amp);
-      y = c.base.y + (oy + c.push.y) * amp * b;
-      z = Math.sin(t * 0.9 + c.phase) * 0.25 * amp;
-      rz = c.baseRot + Math.sin(t * 0.9 + c.phase) * 0.05 * amp;
-      ry = (Math.sin(t * 0.6 + c.phase) * 0.18 + pointer.x * 0.12) * amp;
-      rx = pointer.y * 0.08 * amp;
+      c.push.x += (px - c.push.x) * (1 - Math.exp(-dt * 4));
+      c.push.y += (py - c.push.y) * (1 - Math.exp(-dt * 4));
+      x = c.base.x + (ox + c.push.x) * amp;
+      y = c.base.y + (oy + c.push.y) * amp;
+      z = Math.sin(t * 0.8 + c.phase) * 0.25 * amp;
+      rz = c.baseRot + Math.sin(t * 0.7 + c.phase) * 0.04 * amp;
+      ry = (Math.sin(t * 0.5 + c.phase) * 0.16 + pointer.x * 0.1) * amp;
+      rx = pointer.y * 0.07 * amp;
       sc = CHAOS_SC;
     }
-    c.hover += ((c.hovered ? 1 : 0) - c.hover) * Math.min(1, dt * 10);
-    m.position.set(x, y, z + c.hover * 0.4);
-    m.rotation.set(rx, ry, rz);
-    m.scale.setScalar(sc * (1 + c.hover * 0.08));
+    c.hover += ((c.hovered ? 1 : 0) - c.hover) * (1 - Math.exp(-dt * 8));
+    z += c.hover * 0.4;
+    sc *= 1 + c.hover * 0.07;
+    if (!c.placed) {
+      c.placed = true;
+      m.position.set(x, y, z); m.rotation.set(rx, ry, rz); m.scale.setScalar(sc);
+      return;
+    }
+    const k = 1 - Math.exp(-dt * 9); // плавное приближение к цели
+    m.position.x += (x - m.position.x) * k;
+    m.position.y += (y - m.position.y) * k;
+    m.position.z += (z - m.position.z) * k;
+    m.rotation.x += (rx - m.rotation.x) * k;
+    m.rotation.y += (ry - m.rotation.y) * k;
+    m.rotation.z += (rz - m.rotation.z) * k;
+    m.scale.setScalar(m.scale.x + (sc - m.scale.x) * k);
   }
 
   function stepSeg(c, dt) {
     const s = c.seg;
-    if (s.delay > 0) { s.delay -= dt; idleCard(c, dt); c.blend = 1; return; }
+    if (s.delay > 0) { s.delay -= dt; idleCard(c, dt); return; }
     const m = c.mesh;
     if (!s.started) {
       s.started = true;
@@ -647,6 +636,7 @@ export function createHeroScene(canvas, hooks = {}) {
     m.rotation.set(s.fromRot.x * u, s.fromRot.y * u + (s.toRotY || 0) * e + (s.spin || 0) * e, s.fromRot.z * u + s.toRotZ * e);
     m.scale.setScalar(s.fromSc + (s.toScale - s.fromSc) * e);
     if (s.t >= 1) {
+      m.rotation.set(wrapAngle(m.rotation.x), wrapAngle(m.rotation.y), wrapAngle(m.rotation.z));
       c.seg = null;
       s.onDone && s.onDone();
       if (c.queue.length) startSeg(c, c.queue.shift());
@@ -661,8 +651,8 @@ export function createHeroScene(canvas, hooks = {}) {
     rim.color.lerpColors(C_CORAL, C_LIME, mood);
 
     const calm = reduce ? 1 : mood;
-    agent.position.y = L.agentY + Math.sin(t * (1.2 + 3 * (1 - calm))) * (0.05 + 0.07 * (1 - calm)) * L.agentS;
-    agent.rotation.z = Math.sin(t * 19) * 0.014 * (1 - calm);
+    agent.position.y = L.agentY + Math.sin(t * (1.1 + 1.2 * (1 - calm))) * (0.05 + 0.05 * (1 - calm)) * L.agentS;
+    agent.rotation.z = Math.sin(t * 2.2) * 0.02 * (1 - calm);
 
     const tx = pointer.inside ? pointer.x : Math.sin(t * 0.5) * 0.4;
     const ty = pointer.inside ? pointer.y : Math.cos(t * 0.4) * 0.15;
@@ -671,22 +661,23 @@ export function createHeroScene(canvas, hooks = {}) {
     head.rotation.y = lookX * 0.5;
     head.rotation.x = -lookY * 0.25;
     head.rotation.z = -0.08 + lookX * -0.04;
-    eyeL.position.x = -0.4 + lookX * 0.12; eyeR.position.x = 0.4 + lookX * 0.12;
-    eyeL.position.y = eyeR.position.y = 0.12 + lookY * 0.08;
+    eyeL.position.x = -0.3 + lookX * 0.08; eyeR.position.x = 0.3 + lookX * 0.08;
+    eyeL.position.y = eyeR.position.y = 0.1 + lookY * 0.06;
     haloEyeL.position.x = eyeL.position.x; haloEyeR.position.x = eyeR.position.x;
     haloEyeL.position.y = haloEyeR.position.y = eyeL.position.y;
 
     nextBlink -= dt;
     if (nextBlink < 0) { blink = 0.14; nextBlink = rand(2.2, 5); }
     blink = Math.max(0, blink - dt);
-    const wide = 1.2 - 0.2 * mood;
+    const wide = 1.1 - 0.1 * mood;
     eyeL.scale.y = eyeR.scale.y = blink > 0 ? 0.12 : wide;
 
     mouth.scale.y = 0.9 + (-1.0 - 0.9) * mood;
-    mouth.position.y = -0.22 + mood * 0.1;
+    mouth.position.y = -0.14 + mood * 0.05;
 
-    bulb.visible = haloBulb.visible = mood > 0.95 || reduce ? true : Math.sin(t * 14) > 0;
-    antenna.rotation.z = Math.sin(t * 20) * 0.1 * (1 - calm);
+    const bp = 1 + (reduce ? 0 : Math.sin(t * (2 + 3 * (1 - calm))) * 0.18 * (1 - calm * 0.7));
+    bulb.scale.setScalar(bp); haloBulb.scale.setScalar(0.7 * bp);
+    antenna.rotation.z = Math.sin(t * 2.4) * 0.06 * (1 - calm);
 
     squash = Math.max(0, squash - dt * 4);
     const sq = Math.sin(squash * Math.PI) * 0.1;
@@ -696,14 +687,14 @@ export function createHeroScene(canvas, hooks = {}) {
     const wave = clamp((mood - 0.5) / 0.35, 0, 1); // правая рука машет, когда почти всё разобрано
     for (const arm of arms) {
       const { sx } = arm;
-      const lowX = sx * 1.5 + Math.sin(t * 7 + sx) * 0.3 * k;
-      const lowY = -1.2 + Math.sin(t * 9 + sx * 2) * 0.35 * k + Math.sin(t * 1.4 + sx) * 0.05;
+      const lowX = sx * 1.35 + Math.sin(t * 3.2 + sx) * 0.2 * k;
+      const lowY = -1.25 + Math.sin(t * 3.8 + sx * 2) * 0.25 * k + Math.sin(t * 1.4 + sx) * 0.04;
       if (sx > 0) {
-        const wx = 1.5 + Math.sin(t * 6) * 0.17, wy = 0.5 + Math.cos(t * 6) * 0.05;
+        const wx = 1.4 + Math.sin(t * 4) * 0.12, wy = 0.3 + Math.cos(t * 4) * 0.04;
         solveArm(arm, lowX + (wx - lowX) * wave, lowY + (wy - lowY) * wave);
       } else solveArm(arm, lowX, lowY);
     }
-    const bob = Math.sin(t * (1.2 + 3 * (1 - calm)));
+    const bob = Math.sin(t * (1.1 + 1.2 * (1 - calm)));
     blob.material.opacity = 0.5 - bob * 0.06;
     blob.scale.set(4.6 * L.agentS * (1 - bob * 0.04), 7 * L.agentS * (1 - bob * 0.04), 1);
 
@@ -716,14 +707,13 @@ export function createHeroScene(canvas, hooks = {}) {
   }
 
   function updateBg(dt) {
-    scrollShown += (scrollP - scrollShown) * Math.min(1, dt * 5);
     const chaosK = reduce ? 0 : 1 - mood;
     const pulse = 1 + Math.sin(squash * Math.PI) * 0.1;
     const place = (it, jit) => {
       const par = -it.z * 0.07;
       it.mesh.position.set(
-        it.pos.x + Math.sin(t * 0.4 + it.phase) * 0.25 - pointer.x * par + Math.sin(t * 22 + it.phase) * 0.02 * jit,
-        it.pos.y + Math.sin(t * 0.6 + it.phase) * 0.2 * (1 + jit * 1.5) - pointer.y * par * 0.6 + scrollShown * -it.z * 0.5,
+        it.pos.x + Math.sin(t * 0.4 + it.phase) * 0.25 - pointer.x * par,
+        it.pos.y + Math.sin(t * 0.6 + it.phase) * 0.2 * (1 + jit * 0.6) - pointer.y * par * 0.6,
         it.pos.z,
       );
       it.mat.color.lerpColors(it.cA, it.cB, mood);
@@ -734,21 +724,12 @@ export function createHeroScene(canvas, hooks = {}) {
     }
     for (const it of bgItems) {
       const m = it.mesh;
-      m.rotation.x += it.spin.x * dt * (0.25 + 2 * chaosK);
-      m.rotation.y += it.spin.y * dt * (0.25 + 2 * chaosK);
-      m.rotation.z += it.spin.z * dt * (0.25 + 1.5 * chaosK);
+      m.rotation.x += it.spin.x * dt * (0.2 + 0.8 * chaosK);
+      m.rotation.y += it.spin.y * dt * (0.2 + 0.8 * chaosK);
+      m.rotation.z += it.spin.z * dt * (0.2 + 0.6 * chaosK);
       place(it, chaosK);
       m.scale.setScalar(it.sc * pulse);
     }
-    // орбита с лаймовым эллипсоидом вокруг робота
-    const s = L.agentS;
-    orbit.position.set(0.3 * s, L.agentY + 0.3 * s, -1.6 + scrollShown * 0.5);
-    orbit.scale.setScalar(s);
-    const th = t * (0.25 + 0.9 * chaosK) + 0.6;
-    orbBody.position.set(Math.cos(th) * 3.4, 0, Math.sin(th) * 3.4);
-    orbBody.rotation.y = th;
-    orbMat.color.lerpColors(C_CORAL, C_LIME, mood);
-    orbitLine.material.color.lerpColors(C_CORAL, C_LIME, mood);
   }
 
   function frame() {
@@ -777,9 +758,6 @@ export function createHeroScene(canvas, hooks = {}) {
 
   return {
     setMode,
-    setProcessedCount,
-    setScroll(p) { scrollP = p; },
-    get total() { return activeCards().length; },
     get mode() { return mode; },
     dispose() {
       cancelAnimationFrame(raf); io && io.disconnect(); ro.disconnect();

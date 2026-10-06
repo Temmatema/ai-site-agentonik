@@ -9,7 +9,7 @@ const nLost = $('nLost'), nHours = $('nHours');
 const TEXT = {
   chaos: {
     note: 'Заявки теряются, отчёты горят, команда тонет в рутине. <span>Цифры условные.</span>',
-    hint: 'Кликните по заявке или листайте вниз — агент наведёт порядок.',
+    hint: 'Кликните по любой заявке — агент разберёт её.',
     live: 'Режим: вручную. Заявки теряются, рутина растёт.',
   },
   order: {
@@ -105,23 +105,6 @@ $('ctaForm').addEventListener('submit', (e) => {
   if (!f.elements.name.value.trim() || !f.elements.contact.value.trim()) { msg.textContent = 'Укажите имя и как с вами связаться.'; return; }
   msg.textContent = `Спасибо, ${f.elements.name.value.trim()}! Это прототип: заявка пока никуда не отправляется.`;
 });
-
-/* прокрутка: закреплённый hero разбирает заявки по мере скролла */
-const heroPin = $('heroPin');
-let lastN = -1;
-function onScroll() {
-  if (!scene) return;
-  const range = heroPin.offsetHeight - window.innerHeight;
-  if (range <= 0) return;
-  const p = Math.min(1, Math.max(0, -heroPin.getBoundingClientRect().top / range));
-  scene.setScroll(Math.min(1.5, window.scrollY / window.innerHeight));
-  const total = scene.total;
-  const n = Math.min(total, Math.floor((p / 0.85) * (total + 1)));
-  if (n !== lastN) { lastN = n; scene.setProcessedCount(n); }
-}
-window.addEventListener('scroll', onScroll, { passive: true });
-window.addEventListener('resize', onScroll);
-const waitScene = setInterval(() => { if (scene) { clearInterval(waitScene); onScroll(); } }, 200);
 
 /* motion: появление блоков и вступление hero */
 const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
