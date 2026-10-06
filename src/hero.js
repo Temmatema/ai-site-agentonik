@@ -111,7 +111,7 @@ export function initHero(scene) {
   (function loop(now) {
     requestAnimationFrame(loop);
     if (calm || !visible || document.hidden) return;
-    const k = on ? 1 : 0.35;
+    const k = on ? 2.6 : 0.35;
     ambient.forEach((a) => {
       const isRed = a.c.classList.contains('hl-run-red');
       if (!on && !isRed) { a.c.style.opacity = 0; return; }
@@ -148,16 +148,18 @@ export function initHero(scene) {
     if (busy || !li || !li.isConnected) return;
     busy = true;
     const lead = li._lead, idx = [...listIn.children].indexOf(li);
+    const fast = on; // с агентами всё в несколько раз быстрее, чем вручную
+    const T = fast ? { a: 320, b: 280, out: 0.14, wait: 130 } : { a: 650, b: 600, out: 0.28, wait: 260 };
     li.classList.add('is-busy');
     svg.classList.add('is-flow');
 
-    await fly(redP[idx], 'hl-token-red', 650);
-    if (sc) sc.pulse(1);
+    await fly(redP[idx], 'hl-token-red', T.a);
+    if (sc) sc.pulse(fast ? 0.7 : 1);
     if (live) live.textContent = `Заявка обработана: ${lead.out.name}`;
 
     // левая колонка: заявка уходит, снизу приходит новая
-    if (!calm) animate(li, { opacity: [1, 0], x: [0, 24] }, { duration: 0.28 });
-    await sleep(calm ? 0 : 260);
+    if (!calm) animate(li, { opacity: [1, 0], x: [0, 24] }, { duration: T.out });
+    await sleep(calm ? 0 : T.wait);
     flip(listIn, () => {
       li.remove();
       const nl = inEl(LEADS[nextIdx % LEADS.length]); nextIdx++;
@@ -167,7 +169,7 @@ export function initHero(scene) {
     inbox = Math.max(0, inbox - 1); bump(cntIn, inbox);
 
     // правая колонка: зелёная точка летит к верхней карточке, потом появляется обработанная
-    await fly(greenP[0], 'hl-token-green', 600);
+    await fly(greenP[0], 'hl-token-green', T.b);
     flip(listOut, () => {
       if (listOut.children.length >= VISIBLE) listOut.lastElementChild.remove();
       const ne = outEl(lead.out);
@@ -189,7 +191,7 @@ export function initHero(scene) {
 
   /* ---------- автопилот и режимы ---------- */
   let timer = 0, arrive = 0;
-  const idleMs = () => (on ? 2800 : 0);
+  const idleMs = () => (on ? 380 : 0); // пауза между автоматическими обработками
   function tick() {
     clearTimeout(timer);
     if (!on || calm) return;

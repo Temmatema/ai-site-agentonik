@@ -10,9 +10,9 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
 const FOV = 32;
 const CAM_Z = 13;
-const MODEL_H = 5.6;  // высота модели в её единицах (с лентами)
+const MODEL_H = 4.9;  // высота модели в её единицах
 const MODEL_W = 7.4;  // ширина с парящими кубиками
-const MODEL_CY = 2.6; // вертикальный центр модели
+const MODEL_CY = 2.1; // вертикальный центр модели
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -76,32 +76,6 @@ const iconTex = (kind, ink) => canvasTex(256, (c, s) => {
   }
 });
 
-/* плоская лента-завиток: ширина лежит в плоскости экрана, цвет плавно меняется, кончик сужается */
-function ribbon(points, { radius = 0.2, taper = 'tip', segs = 110, radial = 16, stops, wid = 1.9, thk = 0.5 }) {
-  const curve = new THREE.CatmullRomCurve3(points, false, 'catmullrom', 0.5);
-  const geo = new THREE.TubeGeometry(curve, segs, 1, radial, false);
-  const pos = geo.attributes.position, ring = radial + 1;
-  const col = new Float32Array(pos.count * 3);
-  const cs = stops.map((s) => [s[0], new THREE.Color(s[1])]);
-  const tmp = new THREE.Color(), Z = new THREE.Vector3(0, 0, 1), T = new THREE.Vector3(), S = new THREE.Vector3(), N = new THREE.Vector3();
-  for (let i = 0; i <= segs; i++) {
-    const t = i / segs, c = curve.getPointAt(t);
-    T.copy(curve.getTangentAt(t)); S.crossVectors(T, Z).normalize(); N.crossVectors(T, S).normalize();
-    const k = radius * (taper === 'tip' ? Math.pow(1 - t, 0.7) + 0.06 : Math.pow(Math.sin(Math.PI * t), 0.7) + 0.06);
-    let a = cs[0], b = cs[cs.length - 1];
-    for (let q = 0; q < cs.length - 1; q++) if (t >= cs[q][0] && t <= cs[q + 1][0]) { a = cs[q]; b = cs[q + 1]; }
-    tmp.copy(a[1]).lerp(b[1], b[0] === a[0] ? 0 : (t - a[0]) / (b[0] - a[0]));
-    for (let j = 0; j < ring; j++) {
-      const idx = i * ring + j, ph = (j / radial) * Math.PI * 2, cx = Math.cos(ph) * wid, sy = Math.sin(ph) * thk;
-      pos.setXYZ(idx, c.x + (S.x * cx + N.x * sy) * k, c.y + (S.y * cx + N.y * sy) * k, c.z + (S.z * cx + N.z * sy) * k);
-      col[idx * 3] = tmp.r; col[idx * 3 + 1] = tmp.g; col[idx * 3 + 2] = tmp.b;
-    }
-  }
-  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
-  geo.computeVertexNormals();
-  return geo;
-}
-
 export function createHero3D(canvas, hero, stage) {
   const reduce = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
 
@@ -134,7 +108,6 @@ export function createHero3D(canvas, hero, stage) {
   const eyeMat = new THREE.MeshBasicMaterial({ color: 0x5aa0ff, toneMapped: false });
   const eyeCore = new THREE.MeshBasicMaterial({ color: 0xe6f3ff, toneMapped: false });
   const halo = new THREE.SpriteMaterial({ map: haloTex(), color: 0x3a78ff, transparent: true, opacity: 0.6, depthWrite: false, toneMapped: false });
-  const ribMat = new THREE.MeshPhysicalMaterial({ vertexColors: true, roughness: 0.26, clearcoat: 1, clearcoatRoughness: 0.12, emissive: 0x1f3fff, emissiveIntensity: 0.4 });
 
   const sph = new THREE.SphereGeometry(1, 48, 32);
   const ell = (mat, x, y, z) => { const m = new THREE.Mesh(sph, mat); m.scale.set(x, y, z); return m; };
@@ -156,31 +129,22 @@ export function createHero3D(canvas, hero, stage) {
   const legL = new THREE.Mesh(legGeo, white); legL.position.set(-0.52, 0.85, 0.28); legL.rotation.z = 0.08; bot.add(legL);
   const legR = new THREE.Mesh(legGeo, white); legR.position.set(0.64, 0.85, 0.08); legR.rotation.z = -0.1; bot.add(legR);
   // тело
-  const torso = ell(white, 0.95, 0.85, 0.8); torso.position.set(0, 1.75, 0.05); torso.rotation.x = 0.18; bot.add(torso);
+  const torso = ell(white, 0.88, 0.78, 0.72); torso.position.set(0, 1.62, 0.05); torso.rotation.x = 0.18; bot.add(torso);
   // голова
-  const head = new THREE.Group(); head.position.set(0, 3.15, 0.1); bot.add(head);
-  head.add(ell(white, 1.55, 1.18, 1.28));
-  const visor = ell(visorMat, 1.28, 0.9, 0.62); visor.position.set(0, -0.02, 0.72); head.add(visor);
+  const head = new THREE.Group(); head.position.set(0, 3.05, 0.1); bot.add(head);
+  head.add(new THREE.Mesh(new RoundedBoxGeometry(3.0, 2.2, 2.5, 14, 1.0), white));
+  const visor = ell(visorMat, 1.22, 0.84, 0.36); visor.position.set(0, -0.02, 0.97); head.add(visor);
   const shine = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 0.2), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.1, depthWrite: false }));
-  shine.position.set(-0.3, 0.55, 1.28); shine.rotation.z = 0.12; head.add(shine);
+  shine.position.set(-0.3, 0.5, 1.325); shine.rotation.z = 0.12; head.add(shine);
   // глаза-дуги
   const eyes = [-1, 1].map((sx) => {
-    const g = new THREE.Group(); g.position.set(sx * 0.5, -0.02, 1.3);
-    g.add(new THREE.Mesh(new THREE.TorusGeometry(0.27, 0.078, 14, 36, Math.PI), eyeMat));
-    const core = new THREE.Mesh(new THREE.TorusGeometry(0.27, 0.03, 8, 36, Math.PI), eyeCore); core.position.z = 0.012; g.add(core);
-    const h = new THREE.Sprite(halo); h.scale.setScalar(1.6); h.position.set(0, 0.08, 0.05); g.add(h);
+    const g = new THREE.Group(); g.position.set(sx * 0.52, -0.06, 1.31);
+    g.add(new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.092, 14, 36, Math.PI), eyeMat));
+    const core = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.034, 8, 36, Math.PI), eyeCore); core.position.z = 0.012; g.add(core);
+    const h = new THREE.Sprite(halo); h.scale.setScalar(1.9); h.position.set(0, 0.1, 0.05); g.add(h);
     head.add(g);
     return { g, h };
   });
-  // ленты
-  const V = (x, y, z) => new THREE.Vector3(x, y, z);
-  const rA = new THREE.Mesh(ribbon([V(-1.35, 0.15, 0.1), V(-2.15, 0.35, 0.25), V(-2.8, 0.95, 0.2), V(-2.75, 1.7, 0.1), V(-2.1, 2.05, 0), V(-1.6, 1.7, -0.05), V(-1.75, 1.2, -0.1), V(-2.1, 1.15, -0.1)], { radius: 0.2, taper: 'tip', stops: [[0, '#e3edff'], [0.3, '#4f8dff'], [0.72, '#2f55ff'], [1, '#8a5cff']] }), ribMat);
-  head.add(rA);
-  const rB = new THREE.Mesh(ribbon([V(-0.2, 0.9, -0.1), V(0.2, 1.75, -0.2), V(0.95, 2.2, -0.2), V(1.65, 1.95, -0.2), V(1.75, 1.35, -0.15), V(1.3, 1.1, -0.1)], { radius: 0.16, taper: 'tip', stops: [[0, '#e3edff'], [0.35, '#6a9dff'], [0.78, '#3d62ff'], [1, '#9a70ff']] }), ribMat);
-  head.add(rB);
-  const rC = new THREE.Mesh(ribbon([V(-0.2, 0.5, -0.45), V(-1.6, 0.3, -0.35), V(-2.55, 0.95, -0.4), V(-2.5, 1.9, -0.45), V(-1.7, 2.4, -0.5), V(-1.0, 2.2, -0.5)], { radius: 0.26, taper: 'mid', thk: 0.4, stops: [[0, '#a9c8ff'], [0.4, '#3f7bff'], [0.8, '#5b4cff'], [1, '#b08cff']] }), ribMat);
-  bot.add(rC);
-
   // руки
   const boneGeo = new THREE.CylinderGeometry(0.16, 0.16, 1, 18);
   const UP = new THREE.Vector3(0, 1, 0);
@@ -200,14 +164,14 @@ export function createHero3D(canvas, hero, stage) {
     const el = new THREE.Mesh(new THREE.SphereGeometry(0.17, 16, 12), white);
     const hand = ell(navy, 0.3, 0.27, 0.34);
     bot.add(up, fo, el, hand);
-    return { sx, S, up, fo, el, hand, base: new THREE.Vector3(sx < 0 ? -0.15 : 1.15, sx < 0 ? 1.0 : 1.1, sx < 0 ? 1.5 : 1.4), pole: new THREE.Vector3(sx, -0.35, 0) };
+    return { sx, S, up, fo, el, hand, base: new THREE.Vector3(sx < 0 ? -0.3 : 1.25, sx < 0 ? 1.0 : 1.15, sx < 0 ? 1.65 : 1.55), pole: new THREE.Vector3(sx, -0.35, 0) };
   });
 
   // куб с искрой в руках
-  const cube = new THREE.Group(); cube.position.set(0.5, 1.55, 1.35); cube.rotation.set(-0.25, -0.5, 0.12); bot.add(cube);
-  cube.add(new THREE.Mesh(new RoundedBoxGeometry(1.35, 1.35, 1.35, 8, 0.3), green));
-  const spark = new THREE.Mesh(new THREE.PlaneGeometry(1.05, 1.05), new THREE.MeshBasicMaterial({ map: sparkleTex(), transparent: true, toneMapped: false, depthWrite: false }));
-  spark.position.z = 0.69; cube.add(spark);
+  const cube = new THREE.Group(); cube.position.set(0.45, 1.5, 1.5); cube.rotation.set(-0.25, -0.5, 0.12); bot.add(cube);
+  cube.add(new THREE.Mesh(new RoundedBoxGeometry(1.5, 1.5, 1.5, 8, 0.34), green));
+  const spark = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 1.2), new THREE.MeshBasicMaterial({ map: sparkleTex(), transparent: true, toneMapped: false, depthWrite: false }));
+  spark.position.z = 0.77; cube.add(spark);
 
   /* парящие кубики-иконки */
   function iconCube(mat, kind, ink, size, pos, rot) {
@@ -280,8 +244,8 @@ export function createHero3D(canvas, hero, stage) {
     lookX = damp(lookX, tx, 5, dt); lookY = damp(lookY, ty, 5, dt);
 
     model.position.y = Math.sin(t * 1.2) * 0.07 * calm;
-    bot.rotation.z = Math.sin(t * 0.7) * 0.015 * calm;
-    head.rotation.set(-lookY * 0.18 - off * 0.12, 0.18 + lookX * 0.32, -0.1 + lookX * -0.04);
+    bot.rotation.set(0.05, -0.12, Math.sin(t * 0.7) * 0.015 * calm);
+    head.rotation.set(-lookY * 0.18 - off * 0.12 + 0.04, -0.22 + lookX * 0.32, -0.12 - lookX * 0.04);
 
     // глаза: радостные дуги, при «ручном» режиме приглушены и вытянуты в линию
     eyes.forEach(({ g, h }) => {
@@ -290,16 +254,9 @@ export function createHero3D(canvas, hero, stage) {
     });
     eyeMat.color.setHex(0x5aa0ff).lerp(new THREE.Color(0x8d93a8), off);
 
-    // ленты
-    const sp = lerp(1, 0.35, off);
-    rA.rotation.z = Math.sin(t * 0.9 * sp) * 0.07 * calm; rA.position.y = Math.sin(t * 1.1 * sp) * 0.05 * calm;
-    rB.rotation.z = Math.sin(t * 1.0 * sp + 1) * 0.06 * calm; rB.position.x = Math.sin(t * 0.8 * sp) * 0.05 * calm;
-    rC.rotation.z = Math.sin(t * 0.7 * sp + 2) * 0.05 * calm; rC.position.y = Math.sin(t * 0.9 * sp) * 0.06 * calm;
-    ribMat.emissiveIntensity = lerp(0.42, 0.1, off) + pulseV * 0.5;
-
     // куб и руки
     const bob = Math.sin(t * 1.5) * 0.05 * calm;
-    cube.position.set(0.5, 1.55 + bob + pulseV * 0.08, 1.35 + pulseV * 0.1);
+    cube.position.set(0.45, 1.5 + bob + pulseV * 0.08, 1.5 + pulseV * 0.1);
     cube.rotation.set(-0.25 + Math.sin(t * 0.8) * 0.04 * calm, -0.5 + Math.sin(t * 0.6) * 0.06 * calm, 0.12);
     cube.scale.setScalar(1 + pulseV * 0.1);
     spark.scale.setScalar(1 + pulseV * 0.25); spark.rotation.z = t * 0.3 * (1 - off * 0.8);
