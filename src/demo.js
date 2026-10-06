@@ -1,6 +1,7 @@
 // Демо «агент разбирает заявку»: схема-поток. Заявка слева, понимание запроса в центре,
 // пять действий справа и итог внизу. Всё считается в браузере по простым правилам,
 // чтобы показать логику работы. Настоящий агент подключается к CRM, прайсу и каналам.
+import { prefillTask } from './contact.js';
 import { animate } from 'motion';
 import { ico } from './icons.js';
 
@@ -116,6 +117,7 @@ export function initDemo() {
   const chanIco = $('chanIco'), chanName = $('chanName'), tagsEl = $('demoTags'), t1 = $('t1'), probe = $('probe');
   const done = $('demoDone'), doneTitle = $('doneTitle'), doneSub = $('doneSub'), doneType = $('doneType'), doneChan = $('doneChan');
   const narrow = matchMedia('(max-width: 1000px)');
+  const cta = $('demoCta'), ctaBtn = $('demoCtaBtn');
 
   $('chanTime').textContent = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
   let channel = PRESETS[0].channel;
@@ -215,6 +217,7 @@ export function initDemo() {
     stepEls.forEach((el) => { setStatus(el, 'idle'); el.querySelector('time').textContent = '—'; el.querySelector('.sdetail').textContent = 'Ждёт заявку'; });
     acts.forEach((p, i) => { p.style.opacity = 0; p.dataset.on = ''; dots[i].style.opacity = 0; });
     done.classList.remove('is-done');
+    if (cta) cta.classList.remove('is-on');
     doneTitle.textContent = 'Ждём заявку';
     doneSub.textContent = 'Нажмите «Отдать агенту», и схема оживёт.';
     doneType.innerHTML = '—'; doneChan.innerHTML = '—';
@@ -285,7 +288,10 @@ export function initDemo() {
     doneChan.innerHTML = `${chanBadge(channel)}${esc(channel)}`;
     if (!reduceMotion) animate(done, { scale: [0.97, 1] }, { type: 'spring', stiffness: 260, damping: 20 });
     runBtn.disabled = false;
+    // призыв под схемой загорается, когда посетитель увидел результат
+    if (cta) cta.classList.add('is-on');
   }
   runBtn.addEventListener('click', run);
+  if (ctaBtn) ctaBtn.addEventListener('click', () => prefillTask(`Хочу, чтобы агент разбирал мои заявки. Основной канал: ${channel}.`));
   layoutFlow();
 }

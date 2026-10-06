@@ -2,6 +2,8 @@ import { animate, inView, scroll, stagger } from 'motion';
 import { initDemo } from './demo.js';
 import { initProducts } from './products.js';
 import { initContact } from './contact.js';
+import { initCalc } from './calc.js';
+import { initFaq } from './faq.js';
 import { initHero } from './hero.js';
 import { ico } from './icons.js';
 
@@ -31,6 +33,10 @@ initProducts();
 
 initContact();
 
+initCalc();
+
+initFaq();
+
 /* motion: появление блоков и вступление hero */
 const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
 if (!calm) {
@@ -47,20 +53,31 @@ if (!calm) {
   setTimeout(() => document.querySelectorAll('.reveal').forEach((el) => { if (getComputedStyle(el).opacity === '0' && el.getBoundingClientRect().top < window.innerHeight) el.style.opacity = '1'; }), 4000);
 }
 
-/* «шторка»: блок контактов выезжает и накладывается на продукты */
+/* «шторка»: демо выезжает и накладывается на главный экран */
 if (!calm) {
-  const under = $('products'), over = $('contact');
+  const under = hero, over = $('demo');
   const pin = () => { under.style.top = Math.min(0, window.innerHeight - under.offsetHeight) + 'px'; };
   pin();
   if (window.ResizeObserver) new ResizeObserver(pin).observe(under);
   window.addEventListener('resize', pin);
-  window.addEventListener('load', pin);
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(pin);
-  [300, 1200].forEach((ms) => setTimeout(pin, ms)); // подстраховка: стили и шрифты могли доехать позже
   scroll((p) => {
     under.style.setProperty('--cover', p.toFixed(3));
-    over.style.setProperty('--in', p.toFixed(3));
+    // полностью закрытый экран не анимируем и не рисуем
+    if (p >= 1) under.dataset.covered = '1'; else delete under.dataset.covered;
   }, { target: over, offset: ['start end', 'start start'] });
+}
+
+/* прокрутка: у каждого стыка блоков свой характер. Значения 0..1 уходят в CSS-переменные */
+if (!calm) {
+  const bind = (el, name, offset, target = el) => el && scroll((p) => el.style.setProperty(name, p.toFixed(3)), { target, offset });
+  bind($('calc'), '--rv', ['start end', 'start 0.15']);                     // лаймовый фон разливается кругом
+  bind($('pcards'), '--fan', ['start end', 'start 0.55']);                  // карточки продуктов съезжаются веером
+  bind($('faq'), '--fq', ['start end', 'start 0.35']);                      // чат доворачивается на место
+  bind($('contact'), '--in', ['start end', 'start 0.25']);                  // тёмная карточка растягивается на всю ширину
+  // параллакс: декоративные фигуры двигаются медленнее контента
+  document.querySelectorAll('.demo-deco, .prod-deco, .c-deco').forEach((deco) => {
+    scroll((p) => { deco.style.translate = `0 ${((p - 0.5) * 160).toFixed(1)}px`; }, { target: deco.parentElement, offset: ['start end', 'end start'] });
+  });
 }
 
 $('year').textContent = new Date().getFullYear();

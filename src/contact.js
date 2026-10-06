@@ -25,6 +25,16 @@ const RULES = {
   task: [(v) => v.trim().length >= 5, 'Напишите пару слов о задаче.'],
 };
 
+// Подставляет текст задачи из других блоков (калькулятор, демо). Свой текст посетителя не затираем.
+export function prefillTask(text) {
+  const form = document.getElementById('ctaForm');
+  if (!form) return;
+  const task = form.elements.task;
+  if (task.value.trim() && !task.dataset.auto) return;
+  task.value = text; task.dataset.auto = '1';
+  task.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
 export function initContact() {
   const form = document.getElementById('ctaForm');
   if (!form) return;
@@ -61,6 +71,7 @@ export function initContact() {
 
   form.addEventListener('input', (e) => {
     const n = e.target.name;
+    if (e.isTrusted) delete e.target.dataset.auto; // посетитель правит текст сам
     if (RULES[n] && e.target.closest('.cfield').classList.contains('bad') && ok(n)) setError(n, false);
     paintSteps(false);
   });

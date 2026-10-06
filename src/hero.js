@@ -1,6 +1,6 @@
-// Главный экран: красные заявки слева проходят через маскота и появляются справа
-// обработанными (зелёными). Клик по заявке обрабатывает её сразу; в режиме
-// «С агентами» маскот разбирает заявки сам. Данные условные.
+// Главный экран: красные заявки слева влетают в маскота и вылетают справа
+// обработанными (зелёными). В режиме «С агентами» маскот берёт все заявки разом,
+// пачкой; клик по заявке обрабатывает её сразу. Данные условные.
 import { animate } from 'motion';
 import { ico } from './icons.js';
 
@@ -15,32 +15,26 @@ const CH = {
 
 // вход: что пришло; out: во что агент превратил заявку
 const LEADS = [
-  { ch: 'tg', time: '12:14', chip: 'Новый', text: 'Нужен ИИ-ассистент для отдела продаж. Бюджет ~ 300 тыс.', out: { name: 'Иван Петров', hot: true, sub: 'ИИ-агент для отдела продаж', sum: '≈ 300 000 ₽', st: 'Горячий лид', av: ['#f3c9a8', '#c98a64'] } },
-  { ch: 'mail', time: '11:08', chip: 'Нет бюджета', text: 'Сколько стоит? Нужен прайс.', out: { name: 'Анна Смирнова', sub: 'Внедрение для поддержки', sum: '≈ 150 000 ₽', st: 'В работе', av: ['#e9c7de', '#b97ba5'] } },
-  { ch: 'wa', time: '10:45', chip: 'Холодный', text: 'Когда сможете начать?', out: { name: 'ООО «СтройИнвест»', org: true, sub: 'Автоматизация заявок', sum: '≈ 250 000 ₽', st: 'Квалификация', av: ['#cfd6dc', '#8e9aa4'] } },
-  { ch: 'call', time: '09:12', chip: 'Не целевой', text: 'Мы уже работаем с другим подрядчиком.', out: { name: 'Максим Кузнецов', sub: 'Нужна презентация', sum: '≈ 100 000 ₽', st: 'Ответ отправлен', av: ['#c9d6f0', '#7d93c4'] } },
-  { ch: 'avito', time: '13:02', chip: 'Новый', text: 'Здравствуйте, ещё актуально? Хочу демо.', out: { name: 'Елена Орлова', sub: 'Чат-бот для магазина', sum: '≈ 180 000 ₽', st: 'Горячий лид', hot: true, av: ['#f3d6b8', '#c79c6a'] } },
-  { ch: 'site', time: '13:20', chip: 'Новый', text: 'Нужен агент для записи клиентов в салон.', out: { name: 'Студия «Лотос»', org: true, sub: 'Запись клиентов', sum: '≈ 90 000 ₽', st: 'В работе', av: ['#d7ecc8', '#8fbf74'] } },
-  { ch: 'tg', time: '14:05', chip: 'Холодный', text: 'Можно подробнее про интеграцию с 1С?', out: { name: 'Дмитрий Волков', sub: 'Интеграция с 1С', sum: '≈ 220 000 ₽', st: 'Квалификация', av: ['#cfe0f3', '#7ba3cf'] } },
-  { ch: 'mail', time: '14:31', chip: 'Новый', text: 'Пришлите, пожалуйста, коммерческое предложение.', out: { name: 'Ольга Карпова', sub: 'КП на чат-бота', sum: '≈ 130 000 ₽', st: 'Ответ отправлен', av: ['#f0cfd6', '#c4808f'] } },
+  { ch: 'tg', time: '12:14', chip: 'Новый', text: 'Нужен ИИ-ассистент для продаж', out: { name: 'Иван Петров', hot: true, sub: 'ИИ-агент для продаж', st: 'Горячий лид', av: ['#f3c9a8', '#c98a64'] } },
+  { ch: 'mail', time: '11:08', chip: 'Нет бюджета', text: 'Сколько стоит? Нужен прайс', out: { name: 'Анна Смирнова', sub: 'Внедрение для поддержки', st: 'В работе', av: ['#e9c7de', '#b97ba5'] } },
+  { ch: 'wa', time: '10:45', chip: 'Холодный', text: 'Когда сможете начать?', out: { name: 'ООО «СтройИнвест»', org: true, sub: 'Автоматизация заявок', st: 'Квалификация', av: ['#cfd6dc', '#8e9aa4'] } },
+  { ch: 'call', time: '09:12', chip: 'Не целевой', text: 'Уже работаем с подрядчиком', out: { name: 'Максим Кузнецов', sub: 'Нужна презентация', st: 'Ответ отправлен', av: ['#c9d6f0', '#7d93c4'] } },
+  { ch: 'avito', time: '13:02', chip: 'Новый', text: 'Ещё актуально? Хочу демо', out: { name: 'Елена Орлова', sub: 'Чат-бот для магазина', st: 'Горячий лид', hot: true, av: ['#f3d6b8', '#c79c6a'] } },
+  { ch: 'site', time: '13:20', chip: 'Новый', text: 'Нужен агент для записи в салон', out: { name: 'Студия «Лотос»', org: true, sub: 'Запись клиентов', st: 'В работе', av: ['#d7ecc8', '#8fbf74'] } },
+  { ch: 'tg', time: '14:05', chip: 'Холодный', text: 'Есть интеграция с 1С?', out: { name: 'Дмитрий Волков', sub: 'Интеграция с 1С', st: 'Квалификация', av: ['#cfe0f3', '#7ba3cf'] } },
+  { ch: 'mail', time: '14:31', chip: 'Новый', text: 'Пришлите, пожалуйста, КП', out: { name: 'Ольга Карпова', sub: 'КП на чат-бота', st: 'Ответ отправлен', av: ['#f0cfd6', '#c4808f'] } },
 ];
 
-const VISIBLE = 4;
+const VISIBLE = 3;
+const HOURS_PER_LEAD = 0.1; // сколько часов команды условно экономит одна обработанная заявка
 const initials = (n) => n.replace(/[«»"]/g, '').split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-const easeInOut = (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
 const NS = 'http://www.w3.org/2000/svg';
-function tween(ms, fn) {
-  return new Promise((res) => {
-    const t0 = performance.now();
-    (function step(now) { const p = Math.min(1, (now - t0) / ms); fn(p); if (p < 1) requestAnimationFrame(step); else res(); })(t0);
-  });
-}
 
 export function initHero(scene) {
   const hero = document.getElementById('hero');
   const listIn = document.getElementById('listIn'), listOut = document.getElementById('listOut');
-  const cntIn = document.getElementById('cntIn'), cntOut = document.getElementById('cntOut');
+  const cntIn = document.getElementById('cntIn'), cntOut = document.getElementById('cntOut'), cntHours = document.getElementById('cntHours');
   const svg = document.getElementById('hflow'), stage = document.getElementById('hStage');
   const live = document.getElementById('live');
   const segOn = document.getElementById('segOn'), segOff = document.getElementById('segOff');
@@ -48,7 +42,7 @@ export function initHero(scene) {
 
   const calm = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
   const narrow = matchMedia('(max-width: 1000px)');
-  let sc = scene, on = true, busy = false, nextIdx = VISIBLE, inbox = 37, done = 28, visible = true;
+  let sc = scene, on = true, nextIdx = VISIBLE, inbox = 37, done = 28, hours = 62, visible = true;
 
   /* ---------- разметка карточек ---------- */
   function inEl(lead) {
@@ -56,7 +50,8 @@ export function initHero(scene) {
     li.className = 'lead lead-in'; li.tabIndex = 0; li.setAttribute('role', 'button');
     li.setAttribute('aria-label', `Обработать заявку: ${c.name}, ${lead.text}`);
     li.innerHTML = `<span class="lead-ch ${c.cls}">${ico(c.ico)}</span>
-      <div class="lead-main"><div class="lead-top"><b>${c.name}</b><time>${lead.time}</time><span class="lead-chip">${lead.chip}</span></div><p>${lead.text}</p></div>`;
+      <div class="lead-main"><div class="lead-top"><b>${c.name}</b><time>${lead.time}</time><span class="lead-chip">${lead.chip}</span></div><p>${lead.text}</p></div>
+      <span class="lead-go" aria-hidden="true">Отдать агенту →</span>`;
     li._lead = lead;
     return li;
   }
@@ -64,8 +59,8 @@ export function initHero(scene) {
     const li = document.createElement('li');
     li.className = 'lead lead-out';
     li.innerHTML = `<span class="av" style="--a:${o.av[0]};--b:${o.av[1]}">${o.org ? ico('grid') : initials(o.name)}</span>
-      <div class="lead-main"><b>${o.name}${o.hot ? `<span class="hotf">${ico('fireFill')}</span>` : ''}</b><small>${o.sub}</small><small>${o.sum}</small></div>
-      <span class="lead-st">${o.st}</span><span class="chev">${ico('arrowR')}</span>`;
+      <div class="lead-main"><b>${o.name}${o.hot ? `<span class="hotf">${ico('fireFill')}</span>` : ''}</b><small>${o.sub}</small></div>
+      <span class="lead-st">${o.st}</span>`;
     return li;
   }
 
@@ -101,16 +96,17 @@ export function initHero(scene) {
       ambient.push({ p, c, len: p.getTotalLength(), off: Math.random(), speed: 0.00011 + Math.random() * 0.00008 });
     });
   }
+  // линии перестраиваем, когда карточки уже встали на место
   let layoutT = 0;
-  function layout() { clearTimeout(layoutT); layoutT = setTimeout(rebuildPaths, 30); }
-  if (window.ResizeObserver) { const ro = new ResizeObserver(layout); ro.observe(hero); ro.observe(stage); }
-  window.addEventListener('resize', layout);
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(layout);
+  function layout(ms = 30) { clearTimeout(layoutT); layoutT = setTimeout(rebuildPaths, ms); }
+  if (window.ResizeObserver) { const ro = new ResizeObserver(() => layout()); ro.observe(hero); ro.observe(stage); }
+  window.addEventListener('resize', () => layout());
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => layout());
   rebuildPaths();
 
   (function loop(now) {
     requestAnimationFrame(loop);
-    if (calm || !visible || document.hidden) return;
+    if (calm || !visible || document.hidden || hero.dataset.covered) return;
     const k = on ? 2.6 : 0.35;
     ambient.forEach((a) => {
       const isRed = a.c.classList.contains('hl-run-red');
@@ -136,71 +132,111 @@ export function initHero(scene) {
     el.textContent = String(n);
     if (!calm) animate(el, { scale: [1.25, 1] }, { duration: 0.35, ease: 'easeOut' });
   }
-  function fly(path, cls, ms) {
-    if (!path || narrow.matches || calm) return sleep(narrow.matches ? 250 : 0);
-    const len = path.getTotalLength(), c = mk('hl-token ' + cls, 'circle');
-    c.setAttribute('r', 9);
-    return tween(ms, (v) => { const pt = path.getPointAtLength(len * easeInOut(v)); c.setAttribute('cx', pt.x); c.setAttribute('cy', pt.y); }).then(() => c.remove());
+  const showHours = () => { if (cntHours) cntHours.textContent = hours.toFixed(1).replace('.', ',') + ' часа'; };
+  showHours();
+
+  /* ---------- полёт карточек через маскота ---------- */
+  const fly = document.createElement('ul');
+  fly.className = 'h-fly'; fly.setAttribute('aria-hidden', 'true'); hero.appendChild(fly);
+  // центр элемента в координатах hero (панели наклонены, поэтому берём центр, а не угол)
+  function centre(el) {
+    const hr = hero.getBoundingClientRect(), r = el.getBoundingClientRect();
+    return { x: r.left - hr.left + r.width / 2, y: r.top - hr.top + r.height / 2 };
+  }
+  // точка, куда влетают и откуда вылетают карточки: визор маскота
+  function anchor() {
+    const a = sc && sc.anchor ? sc.anchor() : null;
+    if (a) return a;
+    const hr = hero.getBoundingClientRect(), sr = stage.getBoundingClientRect();
+    return { x: sr.left - hr.left + sr.width / 2, y: sr.top - hr.top + sr.height * 0.32 };
+  }
+  // «призрак» карточки поверх сцены: c — где должен оказаться его центр
+  function ghost(el, c, w) {
+    el.classList.add('lead-ghost'); el.removeAttribute('tabindex'); el.removeAttribute('role');
+    el.style.width = w + 'px';
+    fly.appendChild(el);
+    el.style.left = (c.x - w / 2) + 'px'; el.style.top = (c.y - el.offsetHeight / 2) + 'px';
+    return el;
   }
 
   /* ---------- обработка заявки ---------- */
-  async function process(li) {
-    if (busy || !li || !li.isConnected) return;
-    busy = true;
-    const lead = li._lead, idx = [...listIn.children].indexOf(li);
-    const fast = on; // с агентами всё в несколько раз быстрее, чем вручную
-    const T = fast ? { a: 320, b: 280, out: 0.14, wait: 130 } : { a: 650, b: 600, out: 0.28, wait: 260 };
-    li.classList.add('is-busy');
-    svg.classList.add('is-flow');
-
-    await fly(redP[idx], 'hl-token-red', T.a);
-    if (sc) sc.pulse(fast ? 0.7 : 1);
-    if (live) live.textContent = `Заявка обработана: ${lead.out.name}`;
-
-    // левая колонка: заявка уходит, снизу приходит новая
-    if (!calm) animate(li, { opacity: [1, 0], x: [0, 24] }, { duration: T.out });
-    await sleep(calm ? 0 : T.wait);
+  function swapIn(li) {
     flip(listIn, () => {
       li.remove();
       const nl = inEl(LEADS[nextIdx % LEADS.length]); nextIdx++;
       listIn.appendChild(nl);
       if (!calm) animate(nl, { opacity: [0, 1], y: [24, 0] }, { type: 'spring', stiffness: 180, damping: 20 });
     });
-    inbox = Math.max(0, inbox - 1); bump(cntIn, inbox);
-
-    // правая колонка: зелёная точка летит к верхней карточке, потом появляется обработанная
-    await fly(greenP[0], 'hl-token-green', T.b);
-    flip(listOut, () => {
-      if (listOut.children.length >= VISIBLE) listOut.lastElementChild.remove();
-      const ne = outEl(lead.out);
-      listOut.prepend(ne);
-      if (!calm) animate(ne, { opacity: [0, 1], scale: [0.92, 1], y: [-18, 0] }, { type: 'spring', stiffness: 200, damping: 20 });
-    });
-    done += 1; bump(cntOut, done);
-
-    layout();
-    svg.classList.remove('is-flow');
-    busy = false;
+    inbox = Math.max(on ? VISIBLE : 0, inbox - 1); bump(cntIn, inbox);
+    layout(600);
   }
 
-  listIn.addEventListener('click', (e) => { const li = e.target.closest('.lead-in'); if (li) { process(li); wake(); } });
+  async function process(li) {
+    if (!li || !li.isConnected || li._busy) return;
+    li._busy = true;
+    const lead = li._lead, fast = on; // с агентами всё в разы быстрее, чем вручную
+    const T = fast ? { in: 0.6, hold: 120, out: 0.6 } : { in: 1.6, hold: 900, out: 1.4 };
+    const flying = !calm && !narrow.matches;
+
+    // красная карточка улетает в визор, на её место снизу приходит новая
+    if (flying) {
+      const from = centre(li), a = anchor();
+      const g = ghost(li.cloneNode(true), from, li.offsetWidth);
+      li.style.visibility = 'hidden';
+      const end = animate(g, { x: [0, a.x - from.x], y: [0, a.y - from.y], scale: [1, 0.1], opacity: [1, 1, 0] }, {
+        duration: T.in, x: { ease: [0.5, 0, 0.9, 0.7] }, y: { ease: [0.3, 0, 0.6, 1] }, scale: { ease: [0.5, 0, 0.8, 0.6] }, opacity: { times: [0, 0.75, 1], ease: 'linear' },
+      }).finished;
+      await sleep(T.in * 350);
+      swapIn(li);
+      await end; g.remove();
+    } else {
+      if (!calm) { animate(li, { opacity: [1, 0], x: [0, 24] }, { duration: 0.2 }); await sleep(220); }
+      swapIn(li);
+    }
+    if (sc) sc.pulse(fast ? 0.5 : 1);
+    if (live) live.textContent = `Заявка обработана: ${lead.out.name}`;
+    await sleep(calm ? 0 : T.hold);
+
+    // зелёная карточка вылетает из визора и встаёт первой в списке обработанных
+    if (flying) {
+      const a = anchor(), to = centre(listOut.firstElementChild || listOut);
+      const g = ghost(outEl(lead.out), to, listOut.offsetWidth);
+      await animate(g, { x: [a.x - to.x, 0], y: [a.y - to.y, 0], scale: [0.1, 1], opacity: [0, 1, 1] }, {
+        duration: T.out, x: { ease: [0.1, 0.3, 0.5, 1] }, y: { ease: [0.4, 0, 0.7, 1] }, scale: { ease: [0.2, 0.4, 0.5, 1] }, opacity: { times: [0, 0.25, 1], ease: 'linear' },
+      }).finished;
+      g.remove();
+    }
+    flip(listOut, () => {
+      while (listOut.children.length >= VISIBLE) listOut.lastElementChild.remove();
+      const ne = outEl(lead.out);
+      listOut.prepend(ne);
+      if (!flying && !calm) animate(ne, { opacity: [0, 1], scale: [0.92, 1], y: [-18, 0] }, { type: 'spring', stiffness: 200, damping: 20 });
+    });
+    done += 1; bump(cntOut, done);
+    if (fast) { hours += HOURS_PER_LEAD; showHours(); } // вручную время команды не экономится
+    layout(600);
+  }
+
+  listIn.addEventListener('click', (e) => { const li = e.target.closest('.lead-in'); if (li) process(li); });
   listIn.addEventListener('keydown', (e) => {
     if (e.key !== 'Enter' && e.key !== ' ') return;
-    const li = e.target.closest('.lead-in'); if (li) { e.preventDefault(); process(li); wake(); }
+    const li = e.target.closest('.lead-in'); if (li) { e.preventDefault(); process(li); }
   });
 
   /* ---------- автопилот и режимы ---------- */
+  // с агентами маскот забирает все видимые заявки одной пачкой, а не по одной
   let timer = 0, arrive = 0;
-  const idleMs = () => (on ? 380 : 0); // пауза между автоматическими обработками
   function tick() {
     clearTimeout(timer);
     if (!on || calm) return;
     timer = setTimeout(async () => {
-      if (visible && !document.hidden && !busy) await process(listIn.firstElementChild);
+      if (visible && !document.hidden && !hero.dataset.covered) {
+        const batch = [...listIn.children].filter((li) => !li._busy);
+        await Promise.all(batch.map((li, i) => sleep(i * 170).then(() => on && process(li))));
+      }
       tick();
-    }, idleMs());
+    }, 1100);
   }
-  function wake() { if (on && !calm) tick(); }
 
   function arrivals() {
     clearInterval(arrive);
@@ -211,15 +247,32 @@ export function initHero(scene) {
     }, on ? 3200 : 1800);
   }
 
+  // вторая половина заголовка меняется вместе с режимом: старая фраза уезжает вверх и расплывается, новая приходит снизу
+  const swapEl = document.getElementById('hSwap');
+  let swapTok = 0;
+  async function swapTitle() {
+    if (!swapEl) return;
+    const my = ++swapTok, text = on ? 'агент уже ответил' : 'клиент уже ушёл';
+    if (!calm) await animate(swapEl, { opacity: [1, 0], y: [0, -22], filter: ['blur(0px)', 'blur(8px)'] }, { duration: 0.28, ease: 'easeIn' }).finished;
+    if (my !== swapTok) return;
+    swapEl.textContent = text;
+    if (!calm) animate(swapEl, { opacity: [0, 1], y: [26, 0], filter: ['blur(8px)', 'blur(0px)'] }, { duration: 0.55, ease: [0.2, 0.8, 0.2, 1] });
+  }
+
   function setMode(next) {
     if (next === on) return;
     on = next;
+    swapTitle();
     hero.dataset.mode = on ? 'on' : 'off';
     segOn.setAttribute('aria-checked', String(on)); segOff.setAttribute('aria-checked', String(!on));
     segOn.tabIndex = on ? 0 : -1; segOff.tabIndex = on ? -1 : 0;
     if (sc) sc.setMode(on);
     if (live) live.textContent = on ? 'Режим: с агентами. Заявки разбираются автоматически.' : 'Режим: вручную. Заявки копятся.';
     arrivals(); on ? tick() : clearTimeout(timer);
+    // подсказка ведёт по кругу: сначала «Вручную», потом обратно к агентам, и исчезает
+    const seg = document.getElementById('seg'), hint = document.getElementById('segHint');
+    if (on) seg.dataset.tried = '1';
+    else if (hint && !seg.dataset.tried) hint.textContent = 'А теперь верните агентов';
   }
   segOn.addEventListener('click', () => setMode(true));
   segOff.addEventListener('click', () => setMode(false));

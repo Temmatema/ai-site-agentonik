@@ -1,5 +1,6 @@
-// Блок «Продукты»: три карточки. По наведению или клику снизу раскрывается панель
-// «Как работает» с мини-схемой процесса. Все примеры иллюстративные.
+// Блок «Продукты»: три карточки и панель с мини-схемой процесса под ними. Первая карточка
+// открыта сразу, остальные переключаются по кнопке «Посмотреть, как работает»; наведение
+// карточку только приподнимает. Все примеры иллюстративные.
 import { animate } from 'motion';
 import { ico } from './icons.js';
 
@@ -196,7 +197,7 @@ export function initProducts() {
 
   let cur = 0;
   const tabOf = PRODUCTS.map(() => 0);
-  let token = 0, started = false, flow, svg, paths = [], dots = [];
+  let token = 0, selTok = 0, flow, svg, paths = [], dots = [];
 
   function render() {
     const P = PRODUCTS[cur], T = P.tabs[tabOf[cur]];
@@ -265,13 +266,18 @@ export function initProducts() {
     }).then(() => { dot.style.opacity = 0; });
   }
 
+  function hideSteps() {
+    if (calm || !flow) return;
+    flow.querySelectorAll('.pnode').forEach((n) => { n.style.opacity = 0; });
+    document.getElementById('pdone').style.opacity = 0;
+  }
+
   /* появление схемы по шагам */
   async function play() {
     const my = ++token;
     const nodes = [...flow.querySelectorAll('.pnode')], done = document.getElementById('pdone');
     if (calm) { paths.forEach((p) => { p.act.style.opacity = 1; }); return; }
-    nodes.forEach((n) => { n.style.opacity = 0; });
-    done.style.opacity = 0;
+    hideSteps();
     for (let i = 0; i < nodes.length; i++) {
       if (my !== token) return;
       animate(nodes[i], { opacity: [0, 1], y: [20, 0] }, { type: 'spring', stiffness: 170, damping: 20 });
@@ -290,42 +296,39 @@ export function initProducts() {
     const cr = cards[cur].getBoundingClientRect(), pr = panel.getBoundingClientRect();
     notch.style.left = (cr.left + cr.width / 2 - pr.left) + 'px';
   }
-  function swap(withMotion) {
+  function swapTab() {
     token++;
-    if (withMotion && !calm) animate(inner, { opacity: [0.2, 1], y: [10, 0] }, { duration: 0.35, ease: 'easeOut' });
     render();
-    if (started) play();
-    panel.setAttribute('aria-labelledby', 'ptab-' + cur);
+    play();
   }
-  function select(i, opts = {}) {
-    if (i === cur && !opts.force) return;
-    cur = i;
+  // смена продукта: старая схема уходит вверх, новая приходит снизу. Страницу не прокручиваем
+  async function select(i) {
+    if (i === cur) return;
+    const my = ++selTok;
+    cur = i; token++;
     cards.forEach((c, k) => { c.setAttribute('aria-selected', String(k === i)); c.tabIndex = k === i ? 0 : -1; });
-    placeNotch();
-    swap(true);
+    panel.setAttribute('aria-labelledby', 'ptab-' + cur);
+    if (!calm) await animate(inner, { opacity: [1, 0], y: [0, -10] }, { duration: 0.18, ease: 'easeIn' }).finished;
+    if (my !== selTok) return;
+    render(); hideSteps(); placeNotch();
+    if (!calm) animate(inner, { opacity: [0, 1], y: [16, 0] }, { duration: 0.45, ease: [0.2, 0.8, 0.2, 1] });
+    play();
   }
 
   cards.forEach((c, i) => {
-    let timer = 0;
-    c.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') timer = setTimeout(() => select(i), 130); });
-    c.addEventListener('pointerleave', () => clearTimeout(timer));
-    c.addEventListener('click', (e) => {
-      select(i);
-      if (narrow.matches && e.target.closest('.pcard-cta')) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
+    c.addEventListener('click', () => select(i));
     c.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select(i); }
       if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
         e.preventDefault();
-        const j = (i + (e.key === 'ArrowRight' ? 1 : cards.length - 1)) % cards.length;
-        select(j); cards[j].focus();
+        cards[(i + (e.key === 'ArrowRight' ? 1 : cards.length - 1)) % cards.length].focus();
       }
     });
   });
 
   inner.addEventListener('click', (e) => {
     const tab = e.target.closest('.ptab');
-    if (tab) { tabOf[cur] = Number(tab.dataset.t); swap(false); return; }
+    if (tab) { tabOf[cur] = Number(tab.dataset.t); swapTab(); return; }
     const arrow = e.target.closest('.pager button');
     if (arrow) select((cur + Number(arrow.dataset.d) + PRODUCTS.length) % PRODUCTS.length);
   });
@@ -336,14 +339,14 @@ export function initProducts() {
 
   render();
   placeNotch();
-  if (!calm) {
-    // схема появляется, когда панель попадает в поле зрения
-    flow.querySelectorAll('.pnode').forEach((n) => { n.style.opacity = 0; });
-    document.getElementById('pdone').style.opacity = 0;
-    const kick = () => { if (!started) { started = true; play(); } };
+  if (calm) play();
+  else {
+    // схема первого продукта проигрывается, когда панель попадает в поле зрения
+    hideSteps();
+    let started = false;
+    const kick = () => { if (!started) { started = true; if (cur === 0 && !selTok) play(); } };
     if ('IntersectionObserver' in window) {
       new IntersectionObserver((en, ob) => { if (en[0].isIntersecting) { kick(); ob.disconnect(); } }, { threshold: 0.3 }).observe(panel);
-    }
-    setTimeout(kick, 8000);
+    } else kick();
   }
 }

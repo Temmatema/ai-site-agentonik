@@ -21,6 +21,7 @@
     <nav class="nav-links" aria-label="Разделы">
       <a href="#demo">Как это работает</a>
       <a href="#products">Продукты</a>
+      <a href="#faq">Вопросы</a>
       <a href="#contact">Контакты</a>
     </nav>
     <a class="btn btn-ink" href="#contact"><span class="lbl-long">Получить консультацию</span><span class="lbl-short">Консультация</span> <span aria-hidden="true">→</span></a>
@@ -34,9 +35,7 @@
 
       <div class="h-copy">
         <p class="eyebrow">ИИ-агенты для бизнеса</p>
-        <h1>Пока вы разбираете заявки, <em>агент уже ответил</em></h1>
-        <p class="h-sub">Агент разбирает входящие, отвечает клиентам, ведёт их по этапам и заносит в CRM. Без рутины и потери заявок.</p>
-        <p class="h-hint">Нажмите на любую заявку и посмотрите, как агент её обработает.</p>
+        <h1>Пока вы разбираете заявки, <em><span class="h-swap" id="hSwap">агент уже ответил</span></em></h1>
       </div>
 
       <aside class="h-panel h-in" aria-label="Входящие заявки">
@@ -53,21 +52,18 @@
 
       <div class="h-bar">
         <div class="h-stat"><small>Получаем заявок в месяц</small><span><b>247</b><i class="h-bars" data-ico="bars"></i></span></div>
-        <span class="h-div" aria-hidden="true"></span>
-        <div class="h-stat"><small>Экономим команде в неделю</small><span><b>62 часа</b><i class="h-clock" data-ico="clock"></i></span></div>
         <a class="btn btn-ink h-cta" href="#demo">Попробовать на своей заявке <span aria-hidden="true">→</span></a>
         <div class="seg" id="seg" role="radiogroup" aria-label="Как работает бизнес">
           <span class="seg-thumb" aria-hidden="true"></span>
-          <button type="button" role="radio" aria-checked="false" id="segOff" tabindex="-1">Вручную</button>
-          <button type="button" role="radio" aria-checked="true" id="segOn">С агентами</button>
+          <button type="button" role="radio" aria-checked="false" id="segOff" tabindex="-1"><i data-ico="clock"></i>Вручную</button>
+          <button type="button" role="radio" aria-checked="true" id="segOn"><i data-ico="bolt"></i>С агентами</button>
+          <span class="seg-hint" id="segHint" aria-hidden="true">Нажмите «Вручную» и сравните</span>
         </div>
-        <div class="h-proof">
-          <span class="avs"><i style="--a:#f3c9a8;--b:#c98a64">А</i><i style="--a:#d7c7f0;--b:#9a82c7">М</i><i style="--a:#bfe3d0;--b:#6fae8f">И</i></span>
-          <span>Уже 200+ компаний<br>внедрили агентов</span>
-        </div>
+        <div class="h-stat h-stat-r"><small>Экономим команде в неделю</small><span><b id="cntHours">62,0 часа</b><i class="h-clock" data-ico="clock"></i></span></div>
         <span class="h-note">Цифры условные</span>
       </div>
 
+      <div class="h-dim" aria-hidden="true"></div>
       <div class="no-webgl" role="note">3D-сцена недоступна в этом браузере, но заявки по-прежнему работают.</div>
       <div class="sr" id="live" aria-live="polite"></div>
     </section>
@@ -124,7 +120,39 @@
             </div>
           </article>
         </div>
+        <div class="demo-cta reveal" id="demoCta">
+          <div><b>Хотите так же на своих заявках?</b><p>Расскажите о задаче, и мы покажем, как агент будет отвечать вашим клиентам и что занесёт в CRM.</p></div>
+          <a class="btn btn-lime" href="#contact" id="demoCtaBtn">Обсудить мою задачу <span aria-hidden="true">→</span></a>
+        </div>
         <p class="mini demo-note">Это демонстрация: ответы собираются по шаблонам прямо в браузере. Настоящий агент подключается к вашей CRM, прайсу и каналам связи.</p>
+      </div>
+    </section>
+
+    <!-- КАЛЬКУЛЯТОР ВЫГОДЫ -->
+    <section class="section roi" id="calc">
+      <div class="wrap roi-grid">
+        <div>
+          <p class="eyebrow reveal">Посчитайте выгоду</p>
+          <h2 class="reveal">Сколько времени агент <em>вернёт команде</em></h2>
+          <div class="roi-fields reveal">
+            <label class="roi-f"><span class="roi-top">Заявок в месяц<output id="roiLeadsOut" for="roiLeads">250</output></span>
+              <input type="range" id="roiLeads" min="50" max="3000" step="50" value="250" /></label>
+            <label class="roi-f"><span class="roi-top">Минут менеджера на одну заявку<output id="roiMinOut" for="roiMin">12 мин</output></span>
+              <input type="range" id="roiMin" min="2" max="30" step="1" value="12" /></label>
+            <label class="roi-f"><span class="roi-top">Стоимость часа сотрудника<output id="roiRateOut" for="roiRate">600 ₽</output></span>
+              <input type="range" id="roiRate" min="200" max="2000" step="50" value="600" /></label>
+          </div>
+        </div>
+        <div class="roi-out reveal" aria-live="polite">
+          <small>Экономия в месяц</small>
+          <div class="roi-money" id="roiMoney">21 000 ₽</div>
+          <div class="roi-row">
+            <div><b id="roiHours">35 ч</b><small>времени команды</small></div>
+            <div><b id="roiDays">4</b><small id="roiDaysLbl">рабочих дня</small></div>
+          </div>
+          <a class="btn btn-lime" href="#contact" id="roiCta">Получить расчёт для моей компании <span aria-hidden="true">→</span></a>
+          <p class="mini roi-note">Оценка: считаем, что агент берёт на себя 70% времени на обработку заявок. Точные цифры зависят от ваших процессов.</p>
+        </div>
       </div>
     </section>
 
@@ -139,7 +167,7 @@
             <p class="eyebrow reveal">Что мы делаем</p>
             <h2 class="reveal">Три продукта, которые <em>снимают рутину</em></h2>
           </div>
-          <p class="lead prod-lead reveal">Закрываем ключевые задачи: общение с клиентами, оформление контента и реклама. Наведите курсор или нажмите на продукт, чтобы узнать, как он работает.</p>
+          <p class="lead prod-lead reveal">Закрываем ключевые задачи: общение с клиентами, оформление контента и реклама. Нажмите «Посмотреть, как работает», и мы покажем процесс на примере.</p>
         </div>
 
         <div class="pcards" id="pcards" role="tablist" aria-label="Продукты">
@@ -169,10 +197,31 @@
           </article>
         </div>
 
-        <section class="ppanel reveal" id="ppanel" role="tabpanel" aria-labelledby="ptab-0" aria-live="polite">
+        <section class="ppanel" id="ppanel" role="tabpanel" aria-labelledby="ptab-0" aria-live="polite">
           <i class="notch" id="notch" aria-hidden="true"></i>
           <div class="ppanel-in" id="ppanelIn"></div>
         </section>
+      </div>
+    </section>
+
+    <!-- ВОПРОСЫ: FAQ в виде чата с агентом -->
+    <section class="section faq" id="faq">
+      <div class="wrap faq-grid">
+        <div>
+          <p class="eyebrow reveal">Вопросы</p>
+          <h2 class="reveal">Спросите агента <em>сами</em></h2>
+          <p class="lead reveal">Нажмите на вопрос, и агент ответит в чате. Или задайте свой.</p>
+          <div class="faq-list reveal" id="faqList"></div>
+        </div>
+        <div class="faq-chat reveal">
+          <header class="faq-head"><span class="faq-bot" aria-hidden="true"></span><div><b>Агент</b><small>онлайн, отвечает сразу</small></div></header>
+          <div class="faq-msgs" id="faqMsgs" aria-live="polite"></div>
+          <form class="faq-form" id="faqForm" novalidate>
+            <label class="sr" for="faqInput">Ваш вопрос</label>
+            <input id="faqInput" name="q" type="text" autocomplete="off" placeholder="Напишите свой вопрос…" />
+            <button class="btn btn-ink" type="submit" aria-label="Отправить вопрос"><span aria-hidden="true">→</span></button>
+          </form>
+        </div>
       </div>
     </section>
 
