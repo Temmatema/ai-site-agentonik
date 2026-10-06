@@ -57,43 +57,59 @@
       <div class="sr" id="live" aria-live="polite"></div>
     </section>
 
-    <!-- ДЕМО: агент разбирает заявку -->
+    <!-- ДЕМО: схема «агент разбирает заявку» -->
     <section class="section demo" id="demo">
+      <div class="demo-deco" aria-hidden="true">
+        <i class="orb orb-donut"></i><i class="orb orb-pale"></i><i class="orb orb-lime"></i><i class="orb orb-lime2"></i><i class="orb orb-white"></i>
+      </div>
       <div class="wrap">
-        <p class="eyebrow reveal">Попробуйте сами</p>
-        <h2 class="reveal">Отдайте агенту заявку и посмотрите, что он делает</h2>
-        <p class="lead reveal">Выберите пример или напишите свою заявку. Агент прочитает её, определит тип, найдёт ответ, напишет клиенту и заведёт запись в CRM.</p>
-
-        <div class="demo-grid">
-          <div class="panel in-panel reveal">
-            <h3 class="panel-title"><span class="dot dot-coral"></span>Входящее сообщение</h3>
+        <div class="demo-head">
+          <div>
+            <p class="eyebrow reveal">Попробуйте сами</p>
+            <h2 class="reveal">Отдайте агенту заявку и посмотрите, <em>что он делает</em></h2>
+            <p class="lead reveal">Выберите пример или напишите свою заявку. Агент прочитает её, определит тип, найдёт ответ, напишет клиенту и заведёт запись в CRM.</p>
+          </div>
+          <div class="presets reveal">
+            <span class="presets-label">Примеры заявок:</span>
             <div class="chips" id="demoPresets" role="group" aria-label="Примеры заявок"></div>
+          </div>
+        </div>
+
+        <div class="flow" id="flow">
+          <svg class="flow-svg" id="flowSvg" aria-hidden="true"></svg>
+
+          <article class="fcard in-card reveal" id="inCard">
+            <header class="in-head"><span id="chanIco"></span><b id="chanName">Telegram</b><time id="chanTime">12:14</time></header>
             <label class="sr" for="demoText">Текст заявки</label>
             <textarea id="demoText" rows="5" placeholder="Напишите заявку клиента своими словами…"></textarea>
             <div class="in-foot">
+              <span class="attach" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="m20 11.5-8 8a5 5 0 0 1-7-7l8.5-8.5a3.3 3.3 0 0 1 4.7 4.7L9.5 17a1.7 1.7 0 0 1-2.4-2.4L15 6.7"/></svg></span>
               <button class="btn btn-lime" id="demoRun" type="button">Отдать агенту <span aria-hidden="true">→</span></button>
-              <span class="mini" id="demoChannel">Канал: сайт</span>
             </div>
-          </div>
+          </article>
 
-          <div class="panel out-panel reveal" id="demoOut">
-            <h3 class="panel-title"><span class="dot dot-lime"></span>Работа агента <span class="timer" id="demoTimer">0,0 с</span></h3>
-            <ol class="steps" id="demoSteps"></ol>
+          <div class="probe" id="probe" hidden><i></i><i></i>Анализирует сообщение…</div>
 
-            <div class="reply" id="demoReply" hidden>
-              <span class="reply-label">Ответ клиенту</span>
-              <p id="demoReplyText"></p>
+          <article class="fcard mid-card reveal" id="midCard">
+            <header class="shead">
+              <span class="sbox sbox-s"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></span>
+              <b>1. Понимает запрос</b><time id="t1">—</time>
+            </header>
+            <ul class="tags" id="demoTags"></ul>
+          </article>
+
+          <div class="right-col" id="rightCol"></div>
+
+          <article class="fcard done reveal" id="demoDone">
+            <span class="done-ico"><svg class="i" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></span>
+            <div class="done-text"><b id="doneTitle">Ждём заявку</b><p id="doneSub">Нажмите «Отдать агенту», и схема оживёт.</p></div>
+            <div class="done-meta">
+              <div><span>Тип заявки</span><div class="pill" id="doneType">—</div></div>
+              <div><span>Канал</span><div class="pill" id="doneChan">—</div></div>
             </div>
-
-            <div class="crm" id="demoCrm" hidden>
-              <span class="reply-label">Запись в CRM</span>
-              <dl id="demoCrmList"></dl>
-            </div>
-
-            <p class="verdict" id="demoVerdict" hidden></p>
-            <p class="mini demo-note">Это демонстрация: ответы собираются по шаблонам прямо в браузере. Настоящий агент подключается к вашей CRM, прайсу и каналам связи.</p>
-          </div>
+          </article>
         </div>
+        <p class="mini demo-note">Это демонстрация: ответы собираются по шаблонам прямо в браузере. Настоящий агент подключается к вашей CRM, прайсу и каналам связи.</p>
       </div>
     </section>
 
