@@ -128,7 +128,9 @@ textarea:focus, input:focus { outline: none; border-color: var(--ink); backgroun
 .in-head b { font-size: 16px; }
 .in-head time { margin-left: auto; font: 500 12px var(--mono); color: var(--faint); }
 .chan { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; color: #fff; }
-.chan .i { width: 16px; height: 16px; }
+.chan .i { width: 58%; height: 58%; }
+.chan.tg .i { margin: 0 2px 0 -1px; }
+.i.f { fill: currentColor; stroke: none; }
 .chan.tg { background: #2aabee; } .chan.wa { background: #25d366; } .chan.web { background: var(--ink); } .chan.mail { background: #e6e3da; color: var(--ink); }
 .in-card textarea { min-height: 148px; background: #f3f2ee; border: 0; border-radius: 18px; font-size: 15px; line-height: 1.5; padding: 14px 16px; }
 .in-card textarea:focus { background: #f7f6f2; box-shadow: 0 0 0 2px var(--ink); }
@@ -152,10 +154,11 @@ textarea:focus, input:focus { outline: none; border-color: var(--ink); backgroun
 .tags { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 10px; min-height: 120px; align-content: start; }
 .tags-empty { color: var(--faint); font-size: 14px; padding: 8px 4px; }
 .tag { display: inline-flex; align-items: center; gap: 10px; width: fit-content; padding: 6px 16px 6px 6px; border-radius: 999px; background: #f4f3ef; font-weight: 500; font-size: 14px; }
-.tico { width: 28px; height: 28px; border-radius: 50%; background: #fff; display: grid; place-items: center; color: var(--lime-d); box-shadow: 0 2px 6px -2px rgba(20, 22, 26, 0.2); flex: none; }
-.tico .i { width: 15px; height: 15px; }
-.tico.hot, .tag.hot .tico { color: var(--coral); }
-.tico.mute, .tag.mute .tico { color: var(--faint); }
+.tico { width: 30px; height: 30px; border-radius: 50%; background: var(--lime-soft); display: grid; place-items: center; color: var(--lime-d); flex: none; }
+.tico .i { width: 17px; height: 17px; display: block; }
+.tico.hot, .tag.hot .tico { background: var(--coral-soft); color: var(--coral); }
+.tico.mute, .tag.mute .tico { background: #e9e8e3; color: var(--faint); }
+.tico.hot .i, .tag.hot .tico .i { width: 18px; height: 18px; }
 
 .right-col { grid-column: 3; grid-row: 1 / span 2; display: grid; gap: 16px; }
 .step { display: grid; grid-template-columns: 56px 1fr 34px; gap: 16px; align-items: center; }
@@ -179,8 +182,8 @@ textarea:focus, input:focus { outline: none; border-color: var(--ink); backgroun
 .done-text p { margin: 2px 0 0; font-size: 14px; color: var(--soft); }
 .done-meta { display: flex; gap: 28px; padding-left: 24px; border-left: 1px solid var(--line); }
 .done-meta span { display: block; margin-bottom: 6px; font-size: 13px; color: var(--soft); }
-.pill { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 4px 14px 4px 5px; border-radius: 999px; background: #f4f3ef; font-weight: 600; font-size: 14px; }
-.pill .chan { width: 26px; height: 26px; }
+.pill { display: inline-flex; align-items: center; gap: 10px; min-height: 40px; padding: 5px 16px 5px 5px; border-radius: 999px; background: #f4f3ef; font-weight: 600; font-size: 14px; }
+.pill .chan { width: 30px; height: 30px; }
 .pill:empty, .pill:not(:has(*)) { padding-left: 14px; color: var(--faint); }
 .demo-note { margin-top: 32px; }
 

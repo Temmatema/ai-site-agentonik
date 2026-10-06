@@ -11,14 +11,14 @@ const PRESETS = [
 ];
 
 const CHANNELS = {
-  Telegram: { cls: 'tg', ico: 'send', notify: 'Slack' },
+  Telegram: { cls: 'tg', ico: 'tgPlane', notify: 'Slack' },
   WhatsApp: { cls: 'wa', ico: 'chat', notify: 'Slack' },
   Сайт: { cls: 'web', ico: 'globe', notify: 'Slack' },
   Почта: { cls: 'mail', ico: 'mail', notify: 'Slack' },
 };
 
 const TYPES = {
-  hot: { name: 'Горячий лид', ico: 'fire', tone: 'hot', dept: 'Продажи', deptIco: 'target' },
+  hot: { name: 'Горячий лид', ico: 'fireFill', tone: 'hot', dept: 'Продажи', deptIco: 'target' },
   price: { name: 'Вопрос о цене', ico: 'tag', tone: '', dept: 'Продажи', deptIco: 'target' },
   complaint: { name: 'Жалоба', ico: 'alert', tone: 'hot', dept: 'Поддержка', deptIco: 'users' },
   spam: { name: 'Спам', ico: 'alert', tone: 'mute', dept: 'Фильтр', deptIco: 'users' },
@@ -56,7 +56,8 @@ function analyze(text) {
 /* ---------- иконки ---------- */
 const ICONS = {
   search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
-  fire: '<path d="M12 2.5s5.5 4.2 5.5 9.8a5.5 5.5 0 0 1-11 0c0-2.1 1-3.4 2.1-4.4.1 1.6.7 2.6 1.7 3.1C10 8.6 10.6 5.2 12 2.5z"/>',
+  fireFill: '<path d="M12.6 1.8c.6 3.6 5.4 5.8 5.4 10.9a6 6 0 0 1-12 0c0-2.2.9-3.7 2.2-4.9.2 1.6.9 2.5 1.8 3 .2-3.3.8-6.2 2.6-9z"/><path fill="#fff" opacity=".55" d="M12 21.2a3.1 3.1 0 0 1-3.1-3.1c0-1.7 1.3-2.7 3.1-5 1.8 2.3 3.1 3.3 3.1 5a3.1 3.1 0 0 1-3.1 3.1z"/>',
+  tgPlane: '<path fill-rule="evenodd" d="M21.6 3.4 2.8 10.7c-.8.3-.8.9-.1 1.1l4.8 1.5 1.8 5.5c.2.6.4.8.9.8.4 0 .6-.2.9-.5l2.3-2.2 4.7 3.5c.9.5 1.5.2 1.7-.8l3-14.6c.3-1.2-.5-1.8-1.3-1.5zM9.2 13l9.1-5.7c.4-.3.8-.1.5.2l-7.5 6.9-.3 3.3z"/>',
   target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.4"/>',
   database: '<ellipse cx="12" cy="5.5" rx="7" ry="3"/><path d="M5 5.5v13c0 1.7 3.1 3 7 3s7-1.3 7-3v-13M5 12c0 1.7 3.1 3 7 3s7-1.3 7-3"/>',
   users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><circle cx="17" cy="9" r="2.5"/><path d="M17.5 14.2c2.4.2 4 2 4 5"/>',
@@ -72,7 +73,7 @@ const ICONS = {
   mail: '<rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m4 7 8 6 8-6"/>',
   globe: '<circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/>',
 };
-const ico = (n, cls = '') => `<svg class="i ${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n]}</svg>`;
+const ico = (n, cls = '') => `<svg class="i ${n.endsWith('Fill') || n === 'tgPlane' ? 'f ' : ''}${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n]}</svg>`;
 const chanBadge = (name) => { const c = CHANNELS[name] || CHANNELS['Сайт']; return `<span class="chan ${c.cls}">${ico(c.ico)}</span>`; };
 
 const STEP_DEFS = [
