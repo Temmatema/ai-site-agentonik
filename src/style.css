@@ -181,7 +181,7 @@ textarea:focus, input:focus { outline: none; border-color: var(--ink); backgroun
 .done-text b { font: 800 22px var(--display); letter-spacing: -0.01em; }
 .done-text p { margin: 2px 0 0; font-size: 14px; color: var(--soft); }
 .done-meta { display: flex; gap: 28px; padding-left: 24px; border-left: 1px solid var(--line); }
-.done-meta span { display: block; margin-bottom: 6px; font-size: 13px; color: var(--soft); }
+.done-meta > div > span { display: block; margin-bottom: 6px; font-size: 13px; color: var(--soft); }
 .pill { display: inline-flex; align-items: center; gap: 10px; min-height: 40px; padding: 5px 16px 5px 5px; border-radius: 999px; background: #f4f3ef; font-weight: 600; font-size: 14px; }
 .pill .chan { width: 30px; height: 30px; }
 .pill:empty, .pill:not(:has(*)) { padding-left: 14px; color: var(--faint); }
