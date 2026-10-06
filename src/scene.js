@@ -197,6 +197,41 @@ export function createHeroScene(canvas, hooks = {}) {
   });
   scene.add(agent);
 
+  /* фон: мягкие фигуры на разной глубине + кольца вокруг робота */
+  const BG = [
+    { nx: -0.92, ny: 0.78, z: -3, size: 0.5, type: 'torus', c: '#ff5b3a', o: '#c4f25a' },
+    { nx: 0.9, ny: 0.7, z: -3, size: 0.42, type: 'sphere', c: '#f8f5ef', o: '#f8f5ef' },
+    { nx: -0.56, ny: 0.6, z: -5, size: 0.34, type: 'box', c: '#ffb59f', o: '#e9f9c4' },
+    { nx: 0.62, ny: 0.64, z: -4, size: 0.38, type: 'capsule', c: '#ff5b3a', o: '#c4f25a' },
+    { nx: -0.97, ny: -0.08, z: -4, size: 0.62, type: 'sphere', c: '#ffd2c4', o: '#e0f59a' },
+    { nx: 0.97, ny: -0.02, z: -4, size: 0.55, type: 'torus', c: '#f8f5ef', o: '#f8f5ef' },
+    { nx: -0.3, ny: -0.5, z: -3, size: 0.32, type: 'box', c: '#14161a', o: '#14161a' },
+    { nx: 0.34, ny: -0.56, z: -3, size: 0.28, type: 'sphere', c: '#ff5b3a', o: '#c4f25a' },
+    { nx: -0.72, ny: -0.62, z: -5, size: 0.46, type: 'capsule', c: '#f8f5ef', o: '#f8f5ef' },
+    { nx: 0.74, ny: -0.66, z: -5, size: 0.5, type: 'box', c: '#ffb59f', o: '#e9f9c4' },
+    { nx: -0.2, ny: 0.86, z: -6, size: 0.28, type: 'sphere', c: '#f8f5ef', o: '#c4f25a' },
+    { nx: 0.22, ny: 0.4, z: -7, size: 0.4, type: 'torus', c: '#ffd2c4', o: '#e0f59a' },
+  ];
+  const bgGeo = {
+    sphere: new THREE.SphereGeometry(1, 32, 24),
+    torus: new THREE.TorusGeometry(1, 0.38, 16, 40),
+    box: new RoundedBoxGeometry(1.6, 1.6, 1.6, 4, 0.35),
+    capsule: new THREE.CapsuleGeometry(0.6, 1, 8, 20),
+  };
+  const bgItems = BG.map((d) => {
+    const mat = new THREE.MeshPhysicalMaterial({ color: d.c, roughness: 0.45, clearcoat: 0.3, clearcoatRoughness: 0.5 });
+    const mesh = new THREE.Mesh(bgGeo[d.type], mat);
+    scene.add(mesh);
+    return { ...d, mesh, mat, cA: new THREE.Color(d.c), cB: new THREE.Color(d.o), phase: rand(0, 6.28), spin: new THREE.Vector3(rand(-0.6, 0.6), rand(-0.6, 0.6), rand(-0.4, 0.4)), pos: new THREE.Vector3(), sc: 1 };
+  });
+  const rings = [3.1, 4.3].map((r, i) => {
+    const mat = new THREE.MeshBasicMaterial({ color: C_CORAL.clone(), transparent: true, opacity: i ? 0.28 : 0.5, toneMapped: false });
+    const m = new THREE.Mesh(new THREE.TorusGeometry(r, 0.02, 8, 120), mat);
+    m.position.z = -2.5 - i;
+    scene.add(m);
+    return m;
+  });
+
   /* карточки */
   const cardGeo = new THREE.PlaneGeometry(CW, CH);
   const texCache = new Map();
@@ -255,6 +290,12 @@ export function createHeroScene(canvas, hooks = {}) {
       c.active = !portrait || PORTRAIT_IDS.includes(c.i);
       c.mesh.visible = c.active;
     });
+    const k = halfH / 3.73;
+    bgItems.forEach((it) => {
+      const persp = (camera.position.z - it.z) / camera.position.z;
+      it.pos.set(it.nx * halfW * persp, it.ny * halfH * persp, it.z);
+      it.sc = it.size * k * (portrait ? 0.8 : 1);
+    });
     const act = activeCards();
     L.slots = [];
 
@@ -267,8 +308,10 @@ export function createHeroScene(canvas, hooks = {}) {
         c.base.set(p[0] * halfW, p[1] * halfH, 0);
         c.baseRot = deg(p[2]);
       });
+      const zoneTop = 0.46 * halfH, zoneBot = -0.7 * halfH;
+      L.cs = Math.min(L.cs, (zoneTop - zoneBot) / (4 * CH * 1.12));
       const xCol = halfW - (CW * L.cs) / 2 - 0.45;
-      const pitch = CH * L.cs * 1.2, yc = -0.14 * halfH;
+      const pitch = CH * L.cs * 1.12, yc = (zoneTop + zoneBot) / 2;
       for (let k = 0; k < act.length; k++) {
         const col = k < 4 ? -1 : 1, row = k % 4;
         L.slots.push(new THREE.Vector3(col * xCol, yc + (1.5 - row) * pitch, 0));
@@ -510,6 +553,32 @@ export function createHeroScene(canvas, hooks = {}) {
     }
   }
 
+  function updateBg(dt) {
+    const chaosK = reduce ? 0 : 1 - mood;
+    const pulse = 1 + Math.sin(squash * Math.PI) * 0.12;
+    for (const it of bgItems) {
+      const m = it.mesh;
+      m.rotation.x += it.spin.x * dt * (0.4 + 3 * chaosK);
+      m.rotation.y += it.spin.y * dt * (0.4 + 3 * chaosK);
+      m.rotation.z += it.spin.z * dt * (0.4 + 2 * chaosK);
+      const par = -it.z * 0.07;
+      m.position.set(
+        it.pos.x + Math.sin(t * 0.4 + it.phase) * 0.25 - pointer.x * par + Math.sin(t * 22 + it.phase) * 0.02 * chaosK,
+        it.pos.y + Math.sin(t * 0.6 + it.phase) * 0.2 * (1 + chaosK * 1.5) - pointer.y * par * 0.6,
+        it.pos.z,
+      );
+      m.scale.setScalar(it.sc * pulse);
+      it.mat.color.lerpColors(it.cA, it.cB, mood);
+    }
+    rings.forEach((r, i) => {
+      r.position.x = 0; r.position.y = L.agentY + 0.5 * L.agentS;
+      r.scale.setScalar(L.agentS * (1 + Math.sin(t * 0.8 + i) * 0.015) * pulse);
+      r.rotation.x = Math.sin(t * 0.3 + i) * 0.5;
+      r.rotation.y = t * (i ? -0.12 : 0.18);
+      r.material.color.lerpColors(C_CORAL, C_LIME, mood);
+    });
+  }
+
   function frame() {
     raf = requestAnimationFrame(frame);
     if (!running || !visible) { clock.getDelta(); return; }
@@ -517,6 +586,7 @@ export function createHeroScene(canvas, hooks = {}) {
     t += dt;
     cards.forEach((c) => { if (c.active) (c.seg ? stepSeg(c, dt) : idleCard(c, dt)); });
     updateAgent(dt);
+    updateBg(dt);
     renderer.render(scene, camera);
   }
 
