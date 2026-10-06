@@ -56,9 +56,9 @@ function drawTicket(ticket, state) {
   const d = ticket[state];
 
   ctx.save();
-  ctx.shadowColor = 'rgba(20,22,26,0.24)';
-  ctx.shadowBlur = 28;
-  ctx.shadowOffsetY = 12;
+  ctx.shadowColor = 'rgba(20,22,26,0.16)';
+  ctx.shadowBlur = 40;
+  ctx.shadowOffsetY = 14;
   ctx.fillStyle = '#ffffff';
   roundRect(ctx, x, y, w, h, r);
   ctx.fill();
@@ -97,6 +97,50 @@ function drawTicket(ticket, state) {
   return cv;
 }
 
+/* ---------- мягкие текстуры ---------- */
+function haloTexture() {
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = 128;
+  const c = cv.getContext('2d');
+  const g = c.createRadialGradient(64, 64, 0, 64, 64, 64);
+  g.addColorStop(0, 'rgba(255,255,255,1)');
+  g.addColorStop(0.35, 'rgba(255,255,255,0.45)');
+  g.addColorStop(1, 'rgba(255,255,255,0)');
+  c.fillStyle = g; c.fillRect(0, 0, 128, 128);
+  const t = new THREE.CanvasTexture(cv);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+// нейтральный размытый шар: цвет задаётся тонировкой спрайта
+function softSphereTexture() {
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = 256;
+  const c = cv.getContext('2d');
+  const g = c.createRadialGradient(96, 88, 8, 128, 128, 112);
+  g.addColorStop(0, '#ffffff');
+  g.addColorStop(0.6, '#f0efeb');
+  g.addColorStop(1, '#cfcec8');
+  if ('filter' in c) c.filter = 'blur(7px)';
+  c.fillStyle = g;
+  c.beginPath(); c.arc(128, 128, 104, 0, Math.PI * 2); c.fill();
+  const t = new THREE.CanvasTexture(cv);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+function blobShadowTexture() {
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = 128;
+  const c = cv.getContext('2d');
+  const g = c.createRadialGradient(64, 64, 0, 64, 64, 64);
+  g.addColorStop(0, 'rgba(40,36,28,0.55)');
+  g.addColorStop(0.5, 'rgba(40,36,28,0.2)');
+  g.addColorStop(1, 'rgba(40,36,28,0)');
+  c.fillStyle = g; c.fillRect(0, 0, 128, 128);
+  return new THREE.CanvasTexture(cv);
+}
+
 /* ---------- сцена ---------- */
 export function createHeroScene(canvas, hooks = {}) {
   const reduce = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -106,8 +150,6 @@ export function createHeroScene(canvas, hooks = {}) {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.0;
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
   const scene = new THREE.Scene();
   const pmrem = new THREE.PMREMGenerator(renderer);
@@ -116,69 +158,100 @@ export function createHeroScene(canvas, hooks = {}) {
   const camera = new THREE.PerspectiveCamera(FOV, 1, 0.1, 100);
   camera.position.set(0, 0, 13);
 
-  const sun = new THREE.DirectionalLight(0xffffff, 1.6);
-  sun.position.set(3.5, 6, 6);
-  sun.castShadow = true;
-  sun.shadow.mapSize.set(1024, 1024);
-  sun.shadow.radius = 6;
-  Object.assign(sun.shadow.camera, { left: -6, right: 6, top: 6, bottom: -6, near: 1, far: 20 });
-  sun.shadow.bias = -0.0005;
-  scene.add(sun);
-  scene.add(new THREE.HemisphereLight(0xffffff, 0xd9d0c0, 0.55));
+  scene.environmentIntensity = 0.9;
+  scene.add(new THREE.HemisphereLight(0xffffff, 0xe6e0d4, 1.0));
+  const key = new THREE.DirectionalLight(0xffffff, 0.9);
+  key.position.set(-3, 5, 7);
+  scene.add(key);
+  const rim = new THREE.PointLight(0xc4f25a, 14, 22);
+  rim.position.set(4.5, 1.5, -3);
+  scene.add(rim);
 
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), new THREE.ShadowMaterial({ opacity: 0.16 }));
-  floor.rotation.x = -Math.PI / 2;
-  floor.receiveShadow = true;
-  scene.add(floor);
+  // мягкая «контактная» тень вместо жёсткой
+  const blob = new THREE.Mesh(
+    new THREE.PlaneGeometry(1, 1),
+    new THREE.MeshBasicMaterial({ map: blobShadowTexture(), transparent: true, depthWrite: false, opacity: 0.5, toneMapped: false }),
+  );
+  blob.rotation.x = -Math.PI / 2;
+  scene.add(blob);
 
   /* робот */
-  const clay = new THREE.MeshPhysicalMaterial({ color: 0xf8f5ef, roughness: 0.4, clearcoat: 0.4, clearcoatRoughness: 0.45 });
-  const dark = new THREE.MeshPhysicalMaterial({ color: 0x14161a, roughness: 0.22, clearcoat: 1, clearcoatRoughness: 0.08 });
-  const accent = new THREE.MeshStandardMaterial({ color: 0xc4f25a, roughness: 0.45 });
+  const clay = new THREE.MeshPhysicalMaterial({ color: 0xf6f4ee, roughness: 0.62, clearcoat: 0.08, clearcoatRoughness: 0.8, sheen: 0.5, sheenRoughness: 0.8, sheenColor: new THREE.Color(0xffffff) });
+  const dark = new THREE.MeshStandardMaterial({ color: 0x1c1e23, roughness: 0.55 });
+  const visorMat = new THREE.MeshPhysicalMaterial({ color: 0x0f1115, roughness: 0.12, metalness: 0.2, clearcoat: 1, clearcoatRoughness: 0.05 });
   const glow = new THREE.MeshBasicMaterial({ color: C_CORAL.clone(), toneMapped: false });
+  const haloMat = new THREE.SpriteMaterial({ map: haloTexture(), color: C_CORAL.clone(), transparent: true, opacity: 0.5, depthWrite: false, toneMapped: false });
+  const halo = (parent, x, y, z, size) => {
+    const sp = new THREE.Sprite(haloMat);
+    sp.position.set(x, y, z); sp.scale.setScalar(size);
+    parent.add(sp);
+    return sp;
+  };
 
   const agent = new THREE.Group();
   const rig = new THREE.Group(); // сюда применяем «сплющивание» при проглатывании заявки
   agent.add(rig);
-  const add = (mesh, parent = rig) => { mesh.castShadow = true; parent.add(mesh); return mesh; };
+  const add = (mesh, parent = rig) => { parent.add(mesh); return mesh; };
+  const sph = new THREE.SphereGeometry(1, 48, 32);
+  const ell = (mat, sx, sy, sz) => { const m = new THREE.Mesh(sph, mat); m.scale.set(sx, sy, sz); return m; };
 
-  const body = add(new THREE.Mesh(new THREE.CapsuleGeometry(0.85, 0.7, 12, 32), clay));
-  body.position.y = -1.0;
+  // тело-«яйцо», шея
+  const body = add(ell(clay, 0.95, 1.15, 0.9));
+  body.position.y = -1.05;
+  add(new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.55, 0.32, 32), dark)).position.y = 0.1;
+  const neckRing = add(new THREE.Mesh(new THREE.TorusGeometry(0.56, 0.08, 16, 48), dark));
+  neckRing.rotation.x = Math.PI / 2; neckRing.position.y = 0.06;
+
+  // голова
   const head = new THREE.Group();
-  head.position.y = 1.0;
+  head.position.y = 1.05;
   rig.add(head);
-  add(new THREE.Mesh(new RoundedBoxGeometry(2.3, 1.7, 1.7, 8, 0.55), clay), head);
-  const screen = add(new THREE.Mesh(new RoundedBoxGeometry(1.8, 1.1, 0.2, 6, 0.1), dark), head);
-  screen.position.set(0, 0, 0.78);
-  const eyeL = new THREE.Mesh(new THREE.CapsuleGeometry(0.1, 0.22, 6, 12), glow);
+  add(new THREE.Mesh(new RoundedBoxGeometry(2.5, 1.8, 1.8, 10, 0.8), clay), head);
+  const visor = add(ell(visorMat, 1.08, 0.7, 0.36), head);
+  visor.position.set(0, 0.02, 0.62);
+  const shine = add(new THREE.Mesh(new THREE.PlaneGeometry(1.1, 0.22), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.08, depthWrite: false })), head);
+  shine.position.set(-0.25, 0.42, 0.985); shine.rotation.z = 0.12;
+
+  const eyeL = new THREE.Mesh(new THREE.CapsuleGeometry(0.1, 0.26, 6, 12), glow);
   const eyeR = eyeL.clone();
-  eyeL.position.set(-0.4, 0.1, 0.9);
-  eyeR.position.set(0.4, 0.1, 0.9);
+  eyeL.position.set(-0.42, 0.12, 0.96);
+  eyeR.position.set(0.42, 0.12, 0.96);
   head.add(eyeL, eyeR);
-  const mouth = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.045, 8, 24, Math.PI), glow);
-  mouth.position.set(0, -0.2, 0.9);
+  const haloEyeL = halo(head, -0.42, 0.12, 1.0, 1.0);
+  const haloEyeR = halo(head, 0.42, 0.12, 1.0, 1.0);
+  const mouth = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.04, 8, 24, Math.PI), glow);
+  mouth.position.set(0, -0.22, 0.96);
   head.add(mouth);
+
+  // наушники со светящимся кольцом
   for (const sx of [-1, 1]) {
-    const ear = add(new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.3, 28), accent), head);
-    ear.rotation.z = Math.PI / 2;
-    ear.position.set(sx * 1.2, 0, 0);
+    const pad = add(new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.4, 40), clay), head);
+    pad.rotation.z = Math.PI / 2; pad.position.set(sx * 1.3, 0, 0);
+    const inset = add(new THREE.Mesh(new THREE.CylinderGeometry(0.27, 0.27, 0.44, 32), dark), head);
+    inset.rotation.z = Math.PI / 2; inset.position.set(sx * 1.3, 0, 0);
+    const ring = add(new THREE.Mesh(new THREE.TorusGeometry(0.31, 0.045, 12, 40), glow), head);
+    ring.rotation.y = Math.PI / 2; ring.position.set(sx * 1.52, 0, 0);
+    halo(head, sx * 1.56, 0, 0, 1.1);
   }
-  const antenna = add(new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.5, 12), dark), head);
-  antenna.position.y = 1.05;
-  const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.13, 20, 20), glow);
+
+  // антенна
+  const antenna = add(new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.45, 12), dark), head);
+  antenna.position.y = 1.1;
+  const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.14, 20, 20), glow);
   bulb.position.y = 1.4;
   head.add(bulb);
+  const haloBulb = halo(head, 0, 1.4, 0, 0.9);
 
   // счётчик на груди
   const chestCv = document.createElement('canvas');
   chestCv.width = 256; chestCv.height = 128;
   const chestTex = new THREE.CanvasTexture(chestCv);
   chestTex.colorSpace = THREE.SRGBColorSpace;
-  const chest = new THREE.Mesh(new RoundedBoxGeometry(1.0, 0.5, 0.12, 4, 0.06), dark);
-  chest.position.set(0, -0.75, 0.82);
+  const chest = new THREE.Mesh(new RoundedBoxGeometry(1.05, 0.5, 0.12, 4, 0.06), dark);
+  chest.position.set(0, -0.75, 0.86);
   rig.add(chest);
-  const chestFace = new THREE.Mesh(new THREE.PlaneGeometry(0.92, 0.42), new THREE.MeshBasicMaterial({ map: chestTex, toneMapped: false }));
-  chestFace.position.set(0, -0.75, 0.885);
+  const chestFace = new THREE.Mesh(new THREE.PlaneGeometry(0.96, 0.42), new THREE.MeshBasicMaterial({ map: chestTex, toneMapped: false }));
+  chestFace.position.set(0, -0.75, 0.925);
   rig.add(chestFace);
   let chestN = 1284, chestLast = 0;
   function drawChest(txt, color) {
@@ -190,40 +263,103 @@ export function createHeroScene(canvas, hooks = {}) {
     chestTex.needsUpdate = true;
   }
 
-  const hands = [-1, 1].map((sx) => {
-    const h = add(new THREE.Mesh(new THREE.SphereGeometry(0.27, 24, 24), clay));
-    h.userData = { sx, base: new THREE.Vector3(sx * 1.4, -0.85, 0.25) };
-    return h;
+  // руки: плечо со светящимся кольцом, два сегмента, кисть
+  const boneGeo = new THREE.CylinderGeometry(0.15, 0.15, 1, 18);
+  const UP = new THREE.Vector3(0, 1, 0);
+  const vE = new THREE.Vector3(), vH = new THREE.Vector3(), vD = new THREE.Vector3();
+  const arms = [-1, 1].map((sx) => {
+    const S = new THREE.Vector3(sx * 0.95, -0.55, 0.3);
+    add(new THREE.Mesh(new THREE.SphereGeometry(0.3, 24, 20), clay)).position.copy(S);
+    const ring = add(new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.05, 12, 40), glow));
+    ring.rotation.y = Math.PI / 2; ring.position.set(sx * 1.24, -0.55, 0.3);
+    halo(rig, sx * 1.28, -0.55, 0.3, 1.0);
+    const upper = add(new THREE.Mesh(boneGeo, clay));
+    const fore = add(new THREE.Mesh(boneGeo, clay));
+    const elbow = add(new THREE.Mesh(new THREE.SphereGeometry(0.17, 20, 16), clay));
+    const hand = new THREE.Group();
+    rig.add(hand);
+    const glove = sx > 0 ? dark : clay;
+    hand.add(new THREE.Mesh(new THREE.SphereGeometry(0.27, 24, 20), glove));
+    const thumb = new THREE.Mesh(new THREE.CapsuleGeometry(0.075, 0.14, 6, 10), glove);
+    thumb.position.set(sx * 0.24, 0.12, 0.05); thumb.rotation.z = -sx * 0.7;
+    hand.add(thumb);
+    if (sx > 0) {
+      [-0.11, 0, 0.11].forEach((x, i) => {
+        const f = new THREE.Mesh(new THREE.CapsuleGeometry(0.07, 0.16, 6, 10), glove);
+        f.position.set(x, 0.32, 0); f.rotation.z = (i - 1) * -0.22;
+        hand.add(f);
+      });
+    }
+    return { sx, S, upper, fore, elbow, hand };
   });
+
+  function bone(mesh, A, B) {
+    vD.copy(B).sub(A);
+    const len = vD.length() || 1e-4;
+    mesh.position.copy(A).add(B).multiplyScalar(0.5);
+    mesh.scale.set(1, len, 1);
+    mesh.quaternion.setFromUnitVectors(UP, vD.divideScalar(len));
+  }
+  function solveArm(arm, hx, hy) {
+    const { S, sx } = arm, l1 = 0.8, l2 = 0.8;
+    let dx = hx - S.x, dy = hy - S.y, d = Math.hypot(dx, dy);
+    const max = l1 + l2 - 0.02;
+    if (d > max) { dx *= max / d; dy *= max / d; d = max; }
+    d = Math.max(d, 0.35);
+    const ux = dx / d, uy = dy / d;
+    const a = (l1 * l1 - l2 * l2 + d * d) / (2 * d), h = Math.sqrt(Math.max(0, l1 * l1 - a * a));
+    const ex = S.x + ux * a, ey = S.y + uy * a, px = -uy, py = ux;
+    const sign = (ex + px * h - S.x) * sx > (ex - px * h - S.x) * sx ? 1 : -1; // сгиб наружу
+    vE.set(ex + px * h * sign, ey + py * h * sign, S.z);
+    vH.set(S.x + dx, S.y + dy, S.z);
+    bone(arm.upper, S, vE);
+    bone(arm.fore, vE, vH);
+    arm.elbow.position.copy(vE);
+    arm.hand.position.copy(vH);
+    vD.copy(vH).sub(vE).normalize();
+    arm.hand.quaternion.setFromUnitVectors(UP, vD);
+  }
   scene.add(agent);
 
-  /* фон: мягкие фигуры на разной глубине */
-  const BG = [
-    { nx: -0.92, ny: 0.78, z: -3, size: 0.5, type: 'torus', c: '#ff5b3a', o: '#c4f25a' },
-    { nx: 0.9, ny: 0.7, z: -3, size: 0.42, type: 'sphere', c: '#f8f5ef', o: '#f8f5ef' },
-    { nx: -0.56, ny: 0.6, z: -5, size: 0.34, type: 'box', c: '#ffb59f', o: '#e9f9c4' },
-    { nx: 0.62, ny: 0.64, z: -4, size: 0.38, type: 'capsule', c: '#ff5b3a', o: '#c4f25a' },
-    { nx: -0.97, ny: -0.08, z: -4, size: 0.62, type: 'sphere', c: '#ffd2c4', o: '#e0f59a' },
-    { nx: 0.97, ny: -0.02, z: -4, size: 0.55, type: 'torus', c: '#f8f5ef', o: '#f8f5ef' },
-    { nx: -0.3, ny: -0.5, z: -3, size: 0.32, type: 'box', c: '#14161a', o: '#14161a' },
-    { nx: 0.34, ny: -0.56, z: -3, size: 0.28, type: 'sphere', c: '#ff5b3a', o: '#c4f25a' },
-    { nx: -0.72, ny: -0.62, z: -5, size: 0.46, type: 'capsule', c: '#f8f5ef', o: '#f8f5ef' },
-    { nx: 0.74, ny: -0.66, z: -5, size: 0.5, type: 'box', c: '#ffb59f', o: '#e9f9c4' },
-    { nx: -0.2, ny: 0.86, z: -6, size: 0.28, type: 'sphere', c: '#f8f5ef', o: '#c4f25a' },
-    { nx: 0.22, ny: 0.4, z: -7, size: 0.4, type: 'torus', c: '#ffd2c4', o: '#e0f59a' },
+  /* фон: большие размытые шары на краях и несколько чётких матовых фигур */
+  const softTex = softSphereTexture();
+  const SOFT = [
+    { nx: -1.0, ny: 0.62, z: -6, size: 2.0, c: '#f1ece6', o: '#f2f2ee' },
+    { nx: 1.02, ny: 0.8, z: -8, size: 2.6, c: '#fff0e8', o: '#ecf6c6' },
+    { nx: -0.9, ny: -0.7, z: -5, size: 1.6, c: '#ffe0d4', o: '#e3f2ac' },
+    { nx: 0.98, ny: -0.1, z: -5, size: 1.7, c: '#f1ece6', o: '#f2f2ee' },
+    { nx: -1.05, ny: 0.02, z: -4, size: 1.1, c: '#ffffff', o: '#fbfbf8' },
+    { nx: 0.7, ny: -0.75, z: -7, size: 1.9, c: '#ffe9df', o: '#e9f5bd' },
   ];
-  const bgGeo = {
-    sphere: new THREE.SphereGeometry(1, 32, 24),
-    torus: new THREE.TorusGeometry(1, 0.38, 16, 40),
-    box: new RoundedBoxGeometry(1.6, 1.6, 1.6, 4, 0.35),
-    capsule: new THREE.CapsuleGeometry(0.6, 1, 8, 20),
-  };
-  const bgItems = BG.map((d) => {
-    const mat = new THREE.MeshPhysicalMaterial({ color: d.c, roughness: 0.45, clearcoat: 0.3, clearcoatRoughness: 0.5 });
-    const mesh = new THREE.Mesh(bgGeo[d.type], mat);
-    scene.add(mesh);
-    return { ...d, mesh, mat, cA: new THREE.Color(d.c), cB: new THREE.Color(d.o), phase: rand(0, 6.28), spin: new THREE.Vector3(rand(-0.6, 0.6), rand(-0.6, 0.6), rand(-0.4, 0.4)), pos: new THREE.Vector3(), sc: 1 };
+  const softItems = SOFT.map((d) => {
+    const mat = new THREE.SpriteMaterial({ map: softTex, color: d.c, transparent: true, opacity: 0.95, depthWrite: false, toneMapped: false });
+    const sp = new THREE.Sprite(mat);
+    scene.add(sp);
+    return { ...d, mesh: sp, mat, cA: new THREE.Color(d.c), cB: new THREE.Color(d.o), phase: rand(0, 6.28), pos: new THREE.Vector3(), sc: 1 };
   });
+
+  const matte = (color) => new THREE.MeshStandardMaterial({ color, roughness: 0.7, metalness: 0 });
+  const CRISP = [
+    { nx: -0.5, ny: -0.02, z: -1.2, size: 0.5, geo: new RoundedBoxGeometry(1, 1, 1, 5, 0.3), c: '#1c1e23', o: '#1c1e23' },
+    { nx: 0.42, ny: -0.52, z: -1.0, size: 0.26, geo: sph, c: '#f6f4ee', o: '#f6f4ee' },
+  ];
+  const bgItems = CRISP.map((d) => {
+    const mat = matte(d.c);
+    const mesh = new THREE.Mesh(d.geo, mat);
+    scene.add(mesh);
+    return { ...d, mesh, mat, cA: new THREE.Color(d.c), cB: new THREE.Color(d.o), phase: rand(0, 6.28), spin: new THREE.Vector3(rand(-0.5, 0.5), rand(-0.5, 0.5), rand(-0.3, 0.3)), pos: new THREE.Vector3(), sc: 1 };
+  });
+
+  // лаймовый эллипсоид на тонкой орбите
+  const orbit = new THREE.Group();
+  orbit.rotation.set(1.15, 0.25, -0.45);
+  scene.add(orbit);
+  const orbitLine = new THREE.Mesh(new THREE.TorusGeometry(3.4, 0.009, 6, 160), new THREE.MeshBasicMaterial({ color: C_LIME.clone(), transparent: true, opacity: 0.3, toneMapped: false }));
+  orbit.add(orbitLine);
+  const orbMat = matte(0xc4f25a);
+  const orbBody = new THREE.Mesh(sph, orbMat);
+  orbBody.scale.set(0.5, 0.4, 0.4);
+  orbit.add(orbBody);
 
   /* карточки */
   const cardGeo = new THREE.PlaneGeometry(CW, CH);
@@ -263,7 +399,9 @@ export function createHeroScene(canvas, hooks = {}) {
     L.agentY = (topY + bottomY) / 2 - mid * s;
     agent.scale.setScalar(s);
     agent.position.set(0, L.agentY, 0);
-    floor.position.y = bottomY + 0.12 * s;
+    blob.position.set(0, bottomY + 0.1 * s, 0);
+    blob.userData.s = s;
+    blob.scale.set(4.6 * s, 7 * s, 1);
     L.mouth.set(0, L.agentY + 1.0 * s, 1.6);
   }
 
@@ -284,7 +422,7 @@ export function createHeroScene(canvas, hooks = {}) {
       c.mesh.visible = c.active;
     });
     const k = halfH / 3.73;
-    bgItems.forEach((it) => {
+    [...softItems, ...bgItems].forEach((it) => {
       const persp = (camera.position.z - it.z) / camera.position.z;
       it.pos.set(it.nx * halfW * persp, it.ny * halfH * persp, it.z);
       it.sc = it.size * k * (portrait ? 0.8 : 1);
@@ -519,6 +657,8 @@ export function createHeroScene(canvas, hooks = {}) {
     const f = activeCards().length ? doneCount() / activeCards().length : 0;
     mood += (f - mood) * Math.min(1, dt * 4);
     glow.color.lerpColors(C_CORAL, C_LIME, mood);
+    haloMat.color.copy(glow.color);
+    rim.color.lerpColors(C_CORAL, C_LIME, mood);
 
     const calm = reduce ? 1 : mood;
     agent.position.y = L.agentY + Math.sin(t * (1.2 + 3 * (1 - calm))) * (0.05 + 0.07 * (1 - calm)) * L.agentS;
@@ -530,8 +670,11 @@ export function createHeroScene(canvas, hooks = {}) {
     lookY += (ty - lookY) * Math.min(1, dt * 6);
     head.rotation.y = lookX * 0.5;
     head.rotation.x = -lookY * 0.25;
+    head.rotation.z = -0.08 + lookX * -0.04;
     eyeL.position.x = -0.4 + lookX * 0.12; eyeR.position.x = 0.4 + lookX * 0.12;
-    eyeL.position.y = eyeR.position.y = 0.1 + lookY * 0.08;
+    eyeL.position.y = eyeR.position.y = 0.12 + lookY * 0.08;
+    haloEyeL.position.x = eyeL.position.x; haloEyeR.position.x = eyeR.position.x;
+    haloEyeL.position.y = haloEyeR.position.y = eyeL.position.y;
 
     nextBlink -= dt;
     if (nextBlink < 0) { blink = 0.14; nextBlink = rand(2.2, 5); }
@@ -540,24 +683,29 @@ export function createHeroScene(canvas, hooks = {}) {
     eyeL.scale.y = eyeR.scale.y = blink > 0 ? 0.12 : wide;
 
     mouth.scale.y = 0.9 + (-1.0 - 0.9) * mood;
-    mouth.position.y = -0.2 + mood * 0.1;
+    mouth.position.y = -0.22 + mood * 0.1;
 
-    bulb.visible = mood > 0.95 || reduce ? true : Math.sin(t * 14) > 0;
+    bulb.visible = haloBulb.visible = mood > 0.95 || reduce ? true : Math.sin(t * 14) > 0;
     antenna.rotation.z = Math.sin(t * 20) * 0.1 * (1 - calm);
 
     squash = Math.max(0, squash - dt * 4);
     const sq = Math.sin(squash * Math.PI) * 0.1;
     rig.scale.set(1 + sq, 1 - sq, 1 + sq);
 
-    for (const h of hands) {
-      const { sx, base } = h.userData;
-      const k = 1 - calm;
-      h.position.set(
-        base.x + Math.sin(t * 7 + sx) * 0.12 * k + sx * 0.08 * calm,
-        base.y + Math.sin(t * 9 + sx * 2) * 0.18 * k + Math.sin(t * 1.4 + sx) * 0.05,
-        base.z,
-      );
+    const k = 1 - calm;
+    const wave = clamp((mood - 0.5) / 0.35, 0, 1); // правая рука машет, когда почти всё разобрано
+    for (const arm of arms) {
+      const { sx } = arm;
+      const lowX = sx * 1.5 + Math.sin(t * 7 + sx) * 0.3 * k;
+      const lowY = -1.2 + Math.sin(t * 9 + sx * 2) * 0.35 * k + Math.sin(t * 1.4 + sx) * 0.05;
+      if (sx > 0) {
+        const wx = 1.5 + Math.sin(t * 6) * 0.17, wy = 0.5 + Math.cos(t * 6) * 0.05;
+        solveArm(arm, lowX + (wx - lowX) * wave, lowY + (wy - lowY) * wave);
+      } else solveArm(arm, lowX, lowY);
     }
+    const bob = Math.sin(t * (1.2 + 3 * (1 - calm)));
+    blob.material.opacity = 0.5 - bob * 0.06;
+    blob.scale.set(4.6 * L.agentS * (1 - bob * 0.04), 7 * L.agentS * (1 - bob * 0.04), 1);
 
     if (mood > 0.98) {
       if (t - chestLast > 0.9) { chestN += Math.floor(rand(1, 4)); chestLast = t; drawChest(String(chestN), '#c4f25a'); }
@@ -570,21 +718,37 @@ export function createHeroScene(canvas, hooks = {}) {
   function updateBg(dt) {
     scrollShown += (scrollP - scrollShown) * Math.min(1, dt * 5);
     const chaosK = reduce ? 0 : 1 - mood;
-    const pulse = 1 + Math.sin(squash * Math.PI) * 0.12;
-    for (const it of bgItems) {
-      const m = it.mesh;
-      m.rotation.x += it.spin.x * dt * (0.4 + 3 * chaosK);
-      m.rotation.y += it.spin.y * dt * (0.4 + 3 * chaosK);
-      m.rotation.z += it.spin.z * dt * (0.4 + 2 * chaosK);
+    const pulse = 1 + Math.sin(squash * Math.PI) * 0.1;
+    const place = (it, jit) => {
       const par = -it.z * 0.07;
-      m.position.set(
-        it.pos.x + Math.sin(t * 0.4 + it.phase) * 0.25 - pointer.x * par + Math.sin(t * 22 + it.phase) * 0.02 * chaosK,
-        it.pos.y + Math.sin(t * 0.6 + it.phase) * 0.2 * (1 + chaosK * 1.5) - pointer.y * par * 0.6 + scrollShown * -it.z * 0.5,
+      it.mesh.position.set(
+        it.pos.x + Math.sin(t * 0.4 + it.phase) * 0.25 - pointer.x * par + Math.sin(t * 22 + it.phase) * 0.02 * jit,
+        it.pos.y + Math.sin(t * 0.6 + it.phase) * 0.2 * (1 + jit * 1.5) - pointer.y * par * 0.6 + scrollShown * -it.z * 0.5,
         it.pos.z,
       );
-      m.scale.setScalar(it.sc * pulse);
       it.mat.color.lerpColors(it.cA, it.cB, mood);
+    };
+    for (const it of softItems) {
+      place(it, chaosK * 0.4);
+      it.mesh.scale.setScalar(it.sc * 2 * pulse);
     }
+    for (const it of bgItems) {
+      const m = it.mesh;
+      m.rotation.x += it.spin.x * dt * (0.25 + 2 * chaosK);
+      m.rotation.y += it.spin.y * dt * (0.25 + 2 * chaosK);
+      m.rotation.z += it.spin.z * dt * (0.25 + 1.5 * chaosK);
+      place(it, chaosK);
+      m.scale.setScalar(it.sc * pulse);
+    }
+    // орбита с лаймовым эллипсоидом вокруг робота
+    const s = L.agentS;
+    orbit.position.set(0.3 * s, L.agentY + 0.3 * s, -1.6 + scrollShown * 0.5);
+    orbit.scale.setScalar(s);
+    const th = t * (0.25 + 0.9 * chaosK) + 0.6;
+    orbBody.position.set(Math.cos(th) * 3.4, 0, Math.sin(th) * 3.4);
+    orbBody.rotation.y = th;
+    orbMat.color.lerpColors(C_CORAL, C_LIME, mood);
+    orbitLine.material.color.lerpColors(C_CORAL, C_LIME, mood);
   }
 
   function frame() {
