@@ -21,6 +21,7 @@
     <nav class="nav-links" aria-label="Разделы">
       <a href="#demo">Как это работает</a>
       <a href="#products">Продукты</a>
+      <a href="#cases">Кейсы</a>
       <a href="#faq">Вопросы</a>
       <a href="#contact">Контакты</a>
     </nav>
@@ -130,6 +131,7 @@
 
     <!-- КАЛЬКУЛЯТОР ВЫГОДЫ -->
     <section class="section roi" id="calc">
+      <div class="deco" aria-hidden="true"><i class="orb r-white"></i><i class="orb r-cube"></i><i class="orb r-ring"></i></div>
       <div class="wrap roi-grid">
         <div>
           <p class="eyebrow reveal">Посчитайте выгоду</p>
@@ -204,8 +206,32 @@
       </div>
     </section>
 
+    <!-- КЕЙСЫ: лента карточек с обложками, по клику открывается кейс. Данные условные, см. src/cases.js -->
+    <section class="cases" id="cases">
+      <div class="deco" aria-hidden="true"><i class="orb k-donut"></i><i class="orb k-lime"></i><i class="orb k-coral"></i></div>
+      <div class="cases-card">
+        <div class="cs-head">
+          <div>
+            <p class="eyebrow reveal">Кейсы</p>
+            <h2 class="reveal">Как это работает <em>у других</em></h2>
+          </div>
+          <div class="cs-arrows reveal">
+            <button type="button" id="csPrev" aria-label="Предыдущие кейсы">←</button>
+            <button type="button" id="csNext" aria-label="Следующие кейсы">→</button>
+          </div>
+        </div>
+        <div class="cs-track" id="csTrack"></div>
+        <p class="mini cases-note">Примеры условные и показывают формат: реальные кейсы появятся здесь позже.</p>
+      </div>
+      <dialog class="cs-dlg" id="csDlg" aria-label="Кейс">
+        <button type="button" class="cs-x" id="csClose" aria-label="Закрыть">×</button>
+        <div id="csDlgBody"></div>
+      </dialog>
+    </section>
+
     <!-- ВОПРОСЫ: FAQ в виде чата с агентом -->
     <section class="section faq" id="faq">
+      <div class="deco" aria-hidden="true"><i class="orb f-pale"></i><i class="orb f-lime"></i><i class="orb f-cube"></i></div>
       <div class="wrap faq-grid">
         <div>
           <p class="eyebrow reveal">Вопросы</p>
@@ -316,7 +342,7 @@
       <div class="ft-bottom">
         <a class="brand" href="#hero" aria-label="АгентникАИ — наверх"><span class="brand-mark" aria-hidden="true"><i></i><i></i></span>АгентникАИ</a>
         <nav class="ft-nav" aria-label="Разделы">
-          <a href="#demo">Как это работает</a><a href="#calc">Калькулятор</a><a href="#products">Продукты</a><a href="#faq">Вопросы</a><a href="#contact">Контакты</a>
+          <a href="#demo">Как это работает</a><a href="#calc">Калькулятор</a><a href="#products">Продукты</a><a href="#cases">Кейсы</a><a href="#faq">Вопросы</a><a href="#contact">Контакты</a>
         </nav>
         <span class="ft-copy">© <span id="year">2026</span> АгентникАИ</span>
       </div>

@@ -3,6 +3,7 @@ import { initDemo } from './demo.js';
 import { initProducts } from './products.js';
 import { initContact } from './contact.js';
 import { initCalc } from './calc.js';
+import { initCases } from './cases.js';
 import { initFaq } from './faq.js';
 import { initFooter } from './footer.js';
 import { initHero } from './hero.js';
@@ -35,6 +36,8 @@ initProducts();
 initContact();
 
 initCalc();
+
+initCases();
 
 initFaq();
 
@@ -77,9 +80,16 @@ if (!calm) {
   bind($('pcards'), '--fan', ['start end', 'start 0.55']);                  // карточки продуктов съезжаются веером
   bind($('faq'), '--fq', ['start end', 'start 0.35']);                      // чат доворачивается на место
   bind($('contact'), '--in', ['start end', 'start 0.25']);                  // тёмная карточка растягивается на всю ширину
-  // параллакс: декоративные фигуры двигаются медленнее контента
-  document.querySelectorAll('.demo-deco, .prod-deco, .c-deco').forEach((deco) => {
-    scroll((p) => { deco.style.translate = `0 ${((p - 0.5) * 160).toFixed(1)}px`; }, { target: deco.parentElement, offset: ['start end', 'end start'] });
+  // параллакс фоновых фигур: каждая сдвигается от прокрутки своей секции и от курсора, сила зависит от её «глубины» (--d в CSS)
+  document.querySelectorAll('.demo-deco, .prod-deco, .c-deco, .deco').forEach((deco) => {
+    const sec = deco.parentElement;
+    scroll((p) => deco.style.setProperty('--sp', (p - 0.5).toFixed(3)), { target: sec, offset: ['start end', 'end start'] });
+    sec.addEventListener('pointermove', (e) => {
+      if (e.pointerType !== 'mouse') return;
+      const r = sec.getBoundingClientRect();
+      deco.style.setProperty('--mx', ((e.clientX - r.left) / r.width - 0.5).toFixed(3));
+      deco.style.setProperty('--my', ((e.clientY - r.top) / r.height - 0.5).toFixed(3));
+    });
   });
 }
 
