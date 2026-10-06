@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="/src/style.css" />
 </head>
 <body>
+  <div class="progress" id="progress" aria-hidden="true"></div>
   <header class="nav" id="nav">
     <a class="brand" href="#hero" aria-label="АгентникАИ — наверх">
       <span class="brand-mark" aria-hidden="true"><i></i><i></i></span>
@@ -27,13 +28,14 @@
 
   <main>
     <!-- HERO: 3D-сцена «хаос → порядок» -->
+    <div class="hero-pin" id="heroPin">
     <section class="hero" id="hero" data-state="chaos">
       <canvas id="scene" aria-hidden="true"></canvas>
 
       <div class="hero-copy">
         <p class="eyebrow">ИИ-агенты и ИИ-продукты для бизнеса</p>
         <h1>Пока вы разгребаете заявки, <em>агент уже ответил</em></h1>
-        <p class="hero-hint" id="heroHint">Кликните по любой заявке — агент разберёт её.</p>
+        <p class="hero-hint" id="heroHint">Кликните по заявке или листайте вниз — агент наведёт порядок.</p>
       </div>
 
       <div class="hero-bar">
@@ -55,16 +57,17 @@
       <div class="no-webgl" role="note">3D-сцена недоступна в этом браузере, но переключатель ниже работает.</div>
       <div class="sr" id="live" aria-live="polite"></div>
     </section>
+    </div>
 
     <!-- ДЕМО: агент разбирает заявку -->
     <section class="section demo" id="demo">
       <div class="wrap">
-        <p class="eyebrow">Попробуйте сами</p>
-        <h2>Отдайте агенту заявку и посмотрите, что он делает</h2>
-        <p class="lead">Выберите пример или напишите свою заявку. Агент прочитает её, определит тип, найдёт ответ, напишет клиенту и заведёт запись в CRM.</p>
+        <p class="eyebrow reveal">Попробуйте сами</p>
+        <h2 class="reveal">Отдайте агенту заявку и посмотрите, что он делает</h2>
+        <p class="lead reveal">Выберите пример или напишите свою заявку. Агент прочитает её, определит тип, найдёт ответ, напишет клиенту и заведёт запись в CRM.</p>
 
         <div class="demo-grid">
-          <div class="panel in-panel">
+          <div class="panel in-panel reveal">
             <h3 class="panel-title"><span class="dot dot-coral"></span>Входящее сообщение</h3>
             <div class="chips" id="demoPresets" role="group" aria-label="Примеры заявок"></div>
             <label class="sr" for="demoText">Текст заявки</label>
@@ -75,7 +78,7 @@
             </div>
           </div>
 
-          <div class="panel out-panel" id="demoOut">
+          <div class="panel out-panel reveal" id="demoOut">
             <h3 class="panel-title"><span class="dot dot-lime"></span>Работа агента <span class="timer" id="demoTimer">0,0 с</span></h3>
             <ol class="steps" id="demoSteps"></ol>
 
@@ -99,22 +102,22 @@
     <!-- ПРОДУКТЫ -->
     <section class="section products" id="products">
       <div class="wrap">
-        <p class="eyebrow">Что мы делаем</p>
-        <h2>Три продукта, которые снимают рутину</h2>
+        <p class="eyebrow reveal">Что мы делаем</p>
+        <h2 class="reveal">Три продукта, которые снимают рутину</h2>
         <div class="cards3">
-          <article class="pcard tilt" data-accent="lime">
+          <article class="pcard tilt reveal" data-accent="lime">
             <span class="pcard-no">01</span>
             <h3>ИИ-агенты</h3>
             <p>Отвечают клиентам, разбирают заявки и почту, собирают отчёты, обновляют CRM. Работают круглосуточно и передают вам только важное.</p>
             <ul><li>Заявки и поддержка</li><li>Отчёты и сводки</li><li>Интеграции с CRM</li></ul>
           </article>
-          <article class="pcard tilt" data-accent="coral">
+          <article class="pcard tilt reveal" data-accent="coral">
             <span class="pcard-no">02</span>
             <h3>ИИ-дизайн</h3>
             <p>Баннеры, карточки товаров и презентации за часы, а не недели. Единый стиль бренда в каждом макете.</p>
             <ul><li>Карточки для маркетплейсов</li><li>Баннеры и соцсети</li><li>Презентации</li></ul>
           </article>
-          <article class="pcard tilt" data-accent="ink">
+          <article class="pcard tilt reveal" data-accent="ink">
             <span class="pcard-no">03</span>
             <h3>ИИ-реклама</h3>
             <p>Креативы, тексты и A/B-тесты в большом количестве. Находим связки, которые приводят клиентов дешевле.</p>
@@ -128,11 +131,11 @@
     <section class="section contact" id="contact">
       <div class="wrap contact-wrap">
         <div>
-          <p class="eyebrow">Начнём</p>
-          <h2>Расскажите, где у вас тонет команда</h2>
-          <p class="lead">Покажем, какие процессы агент возьмёт на себя, и посчитаем выгоду на ваших цифрах.</p>
+          <p class="eyebrow reveal">Начнём</p>
+          <h2 class="reveal">Расскажите, где у вас тонет команда</h2>
+          <p class="lead reveal">Покажем, какие процессы агент возьмёт на себя, и посчитаем выгоду на ваших цифрах.</p>
         </div>
-        <form class="panel form" id="ctaForm" novalidate>
+        <form class="panel form reveal" id="ctaForm" novalidate>
           <label>Как к вам обращаться<input name="name" type="text" autocomplete="name" required placeholder="Анна" /></label>
           <label>Телефон или Telegram<input name="contact" type="text" autocomplete="tel" required placeholder="+7 900 000-00-00" /></label>
           <label>Что хотите автоматизировать<textarea name="task" rows="3" placeholder="Например: отвечать на заявки с Авито"></textarea></label>

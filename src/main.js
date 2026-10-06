@@ -1,3 +1,4 @@
+import { animate, inView, scroll, stagger } from 'motion';
 import { initDemo } from './demo.js';
 
 const $ = (id) => document.getElementById(id);
@@ -8,7 +9,7 @@ const nLost = $('nLost'), nHours = $('nHours');
 const TEXT = {
   chaos: {
     note: 'Заявки теряются, отчёты горят, команда тонет в рутине. <span>Цифры условные.</span>',
-    hint: 'Кликните по любой заявке — агент разберёт её.',
+    hint: 'Кликните по заявке или листайте вниз — агент наведёт порядок.',
     live: 'Режим: вручную. Заявки теряются, рутина растёт.',
   },
   order: {
@@ -104,5 +105,38 @@ $('ctaForm').addEventListener('submit', (e) => {
   if (!f.elements.name.value.trim() || !f.elements.contact.value.trim()) { msg.textContent = 'Укажите имя и как с вами связаться.'; return; }
   msg.textContent = `Спасибо, ${f.elements.name.value.trim()}! Это прототип: заявка пока никуда не отправляется.`;
 });
+
+/* прокрутка: закреплённый hero разбирает заявки по мере скролла */
+const heroPin = $('heroPin');
+let lastN = -1;
+function onScroll() {
+  if (!scene) return;
+  const range = heroPin.offsetHeight - window.innerHeight;
+  if (range <= 0) return;
+  const p = Math.min(1, Math.max(0, -heroPin.getBoundingClientRect().top / range));
+  scene.setScroll(Math.min(1.5, window.scrollY / window.innerHeight));
+  const total = scene.total;
+  const n = Math.min(total, Math.floor((p / 0.85) * (total + 1)));
+  if (n !== lastN) { lastN = n; scene.setProcessedCount(n); }
+}
+window.addEventListener('scroll', onScroll, { passive: true });
+window.addEventListener('resize', onScroll);
+const waitScene = setInterval(() => { if (scene) { clearInterval(waitScene); onScroll(); } }, 200);
+
+/* motion: появление блоков и вступление hero */
+const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+if (!calm) {
+  document.documentElement.classList.add('motion-ready');
+  animate('.hero-copy .eyebrow, .hero h1', { opacity: [0, 1], y: [28, 0] }, { delay: stagger(0.12), duration: 0.9, ease: [0.2, 0.8, 0.2, 1] });
+  scroll(animate('#progress', { scaleX: [0, 1] }, { ease: 'linear' }));
+  inView('.reveal', (el) => {
+    const sibs = [...el.parentElement.children].filter((c) => c.classList.contains('reveal'));
+    const d = Math.max(0, sibs.indexOf(el)) * 0.1;
+    const a = animate(el, { opacity: [0, 1], y: [48, 0] }, { type: 'spring', stiffness: 120, damping: 18, delay: d });
+    a.finished.then(() => { el.style.removeProperty('transform'); el.style.removeProperty('translate'); });
+  }, { amount: 0.2 });
+  // страховка: если что-то не успело появиться
+  setTimeout(() => document.querySelectorAll('.reveal').forEach((el) => { if (getComputedStyle(el).opacity === '0' && el.getBoundingClientRect().top < window.innerHeight) el.style.opacity = '1'; }), 4000);
+}
 
 $('year').textContent = new Date().getFullYear();

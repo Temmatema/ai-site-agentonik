@@ -1,3 +1,5 @@
+import { animate } from 'motion';
+
 // Демо «агент разбирает заявку»: всё считается в браузере по простым правилам,
 // чтобы показать логику работы. Настоящий агент подключается к CRM, прайсу и каналам.
 
@@ -46,6 +48,7 @@ function analyze(text) {
   return { type, conf, phone, budget, name, hello: name ? `${name}, здравствуйте! ` : 'Здравствуйте! ' };
 }
 
+const reduceMotion = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -87,6 +90,8 @@ export function initDemo() {
     el.classList.toggle('active', state === 'active');
     el.classList.toggle('done', state === 'done');
     if (state === 'done') el.querySelector('.step-ico').textContent = '✓';
+    if (state !== 'idle' && !reduceMotion) animate(el.querySelector('.step-ico'), { scale: [0.7, 1.25, 1] }, { duration: 0.45, ease: 'easeOut' });
+    if (state === 'done' && detail && !reduceMotion) animate(el.querySelector('.step-detail'), { opacity: [0, 1], x: [-8, 0] }, { duration: 0.4 });
     if (detail != null) el.querySelector('.step-detail').innerHTML = detail;
   };
 
@@ -123,7 +128,9 @@ export function initDemo() {
 
     setStep(3, 'active');
     const reply = REPLIES[a.type](a);
-    replyBox.hidden = false; replyText.textContent = ''; replyText.classList.add('typing');
+    replyBox.hidden = false;
+    if (!reduceMotion) animate(replyBox, { opacity: [0, 1], y: [12, 0] }, { type: 'spring', stiffness: 260, damping: 22 });
+    replyText.textContent = ''; replyText.classList.add('typing');
     for (let i = 0; i < reply.length; i++) {
       replyText.textContent += reply[i];
       if (i % 2 === 0) await sleep(14);
@@ -139,12 +146,14 @@ export function initDemo() {
     if (a.budget) rows.push(['Бюджет', a.budget]);
     crmList.innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join('');
     crmBox.hidden = false;
+    if (!reduceMotion) animate(crmBox, { opacity: [0, 1], y: [12, 0] }, { type: 'spring', stiffness: 260, damping: 22 });
     setStep(4, 'done', a.type === 'spam' ? 'сообщение скрыто' : 'карточка создана, менеджер получил уведомление');
 
     clearInterval(timerId);
     const sec = (performance.now() - t0) / 1000;
     timerEl.textContent = sec.toFixed(1).replace('.', ',') + ' с';
     verdict.hidden = false;
+    if (!reduceMotion) animate(verdict, { opacity: [0, 1], scale: [0.96, 1] }, { type: 'spring', stiffness: 300, damping: 20 });
     verdict.innerHTML = `Агент справился за <b>${sec.toFixed(1).replace('.', ',')} сек</b>. Вручную до первого ответа обычно проходят часы <span style="font-weight:400;opacity:.7">(условная оценка)</span>.`;
     runBtn.disabled = false;
   }

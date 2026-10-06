@@ -373,11 +373,12 @@ export function createHeroScene(canvas, hooks = {}) {
     if (!c.done && !c.busy && !c.seg) return;
     c.queue.length = 0;
     c.busy = true;
+    c.resetting = true;
     queueSeg(c, {
       delay, dur: 0.8 / speed, ease: easeInOut,
       get to() { return c.base.clone(); }, toRotZ: c.baseRot, toRotY: 0, toSc: CHAOS_SC, spin: -Math.PI * 2, lift: 0,
       onStart() { c.mat.map = ticketTex(c.i, 'chaos'); c.done = false; c.slot = -1; emitProgress(); },
-      onDone() { c.busy = false; },
+      onDone() { c.busy = false; c.resetting = false; },
     });
   }
 
@@ -391,6 +392,26 @@ export function createHeroScene(canvas, hooks = {}) {
       mode = 'chaos';
     }
   }
+
+  /* прокрутка страницы управляет количеством разобранных заявок */
+  const isOn = (c) => (c.done || c.busy) && !c.resetting;
+  function setProcessedCount(n) {
+    const act = activeCards();
+    n = clamp(n, 0, act.length);
+    const on = act.filter(isOn);
+    while (on.length < n) {
+      const c = act.find((x) => !isOn(x) && !x.busy);
+      if (!c) break;
+      processCard(c, 0);
+      on.push(c);
+    }
+    while (on.length > n) {
+      on.sort((a, b) => a.slot - b.slot);
+      resetCard(on.pop(), 0);
+    }
+    slotCounter = n;
+  }
+  let scrollP = 0, scrollShown = 0;
 
   /* указатель */
   const ray = new THREE.Raycaster();
@@ -547,6 +568,7 @@ export function createHeroScene(canvas, hooks = {}) {
   }
 
   function updateBg(dt) {
+    scrollShown += (scrollP - scrollShown) * Math.min(1, dt * 5);
     const chaosK = reduce ? 0 : 1 - mood;
     const pulse = 1 + Math.sin(squash * Math.PI) * 0.12;
     for (const it of bgItems) {
@@ -557,7 +579,7 @@ export function createHeroScene(canvas, hooks = {}) {
       const par = -it.z * 0.07;
       m.position.set(
         it.pos.x + Math.sin(t * 0.4 + it.phase) * 0.25 - pointer.x * par + Math.sin(t * 22 + it.phase) * 0.02 * chaosK,
-        it.pos.y + Math.sin(t * 0.6 + it.phase) * 0.2 * (1 + chaosK * 1.5) - pointer.y * par * 0.6,
+        it.pos.y + Math.sin(t * 0.6 + it.phase) * 0.2 * (1 + chaosK * 1.5) - pointer.y * par * 0.6 + scrollShown * -it.z * 0.5,
         it.pos.z,
       );
       m.scale.setScalar(it.sc * pulse);
@@ -591,6 +613,9 @@ export function createHeroScene(canvas, hooks = {}) {
 
   return {
     setMode,
+    setProcessedCount,
+    setScroll(p) { scrollP = p; },
+    get total() { return activeCards().length; },
     get mode() { return mode; },
     dispose() {
       cancelAnimationFrame(raf); io && io.disconnect(); ro.disconnect();
