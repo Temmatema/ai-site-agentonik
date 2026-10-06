@@ -82,7 +82,7 @@ a { color: inherit; }
 .h-sub { margin: 14px auto 0; max-width: 46ch; font-size: clamp(14px, 1.15vw, 17px); color: var(--soft); }
 .h-hint { margin: 10px auto 0; font: 600 12px var(--mono); letter-spacing: 0.02em; color: var(--lime-d); }
 
-.h-stage { position: absolute; z-index: 0; left: 50%; transform: translateX(-50%); top: 350px; bottom: 140px; width: min(620px, var(--mid)); pointer-events: none; }
+.h-stage { position: absolute; z-index: 0; left: 50%; transform: translateX(-50%); top: 322px; bottom: 122px; width: min(680px, var(--mid)); pointer-events: none; }
 
 .h-panel { position: absolute; z-index: 3; top: 150px; width: var(--pw); }
 .h-in { left: var(--pm); transform: perspective(1500px) rotateY(13deg) rotate(-2.5deg); transform-origin: 100% 50%; }
