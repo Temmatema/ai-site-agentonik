@@ -19,41 +19,56 @@
       АгентникАИ
     </a>
     <nav class="nav-links" aria-label="Разделы">
-      <a href="#demo">Демо</a>
+      <a href="#demo">Как это работает</a>
       <a href="#products">Продукты</a>
       <a href="#contact">Контакты</a>
     </nav>
-    <a class="btn btn-ink" href="#contact">Консультация <span aria-hidden="true">→</span></a>
+    <a class="btn btn-ink" href="#contact"><span class="lbl-long">Получить консультацию</span><span class="lbl-short">Консультация</span> <span aria-hidden="true">→</span></a>
   </header>
 
   <main>
-    <!-- HERO: 3D-сцена «хаос → порядок» -->
-    <section class="hero" id="hero" data-state="chaos">
+    <!-- HERO: заявки проходят через ИИ-агента и становятся обработанными -->
+    <section class="hero" id="hero" data-mode="on">
       <canvas id="scene" aria-hidden="true"></canvas>
+      <svg class="hflow" id="hflow" aria-hidden="true"></svg>
 
-      <div class="hero-copy">
-        <p class="eyebrow">ИИ-агенты и ИИ-продукты для бизнеса</p>
-        <h1>Пока вы разгребаете заявки, <em>агент уже ответил</em></h1>
-        <p class="hero-hint" id="heroHint">Кликните по любой заявке — агент разберёт её.</p>
+      <div class="h-copy">
+        <p class="eyebrow">ИИ-агенты для бизнеса</p>
+        <h1>Пока вы разбираете заявки, <em>агент уже ответил</em></h1>
+        <p class="h-sub">Агент разбирает входящие, отвечает клиентам, ведёт их по этапам и заносит в CRM. Без рутины и потери заявок.</p>
+        <p class="h-hint">Нажмите на любую заявку и посмотрите, как агент её обработает.</p>
       </div>
 
-      <div class="hero-bar">
-        <div class="stats">
-          <div class="stat"><span class="stat-label">Потеряно заявок за месяц</span><span class="stat-val" id="nLost">37</span></div>
-          <div class="stat"><span class="stat-label">Рутина команды в неделю</span><span class="stat-val" id="nHours">62 ч</span></div>
-        </div>
+      <aside class="h-panel h-in" aria-label="Входящие заявки">
+        <header class="h-ph h-ph-red"><span class="ph-ico" data-ico="bolt"></span><b>Входящие заявки</b><span class="ph-count" id="cntIn">37</span></header>
+        <ul class="h-list" id="listIn"></ul>
+      </aside>
 
-        <div class="toggle" id="toggle" role="radiogroup" aria-label="Как работает бизнес">
-          <span class="toggle-thumb" aria-hidden="true"></span>
-          <button type="button" role="radio" aria-checked="true" id="tgChaos">Вручную</button>
-          <button type="button" role="radio" aria-checked="false" id="tgOrder" tabindex="-1">С агентами</button>
-        </div>
+      <div class="h-stage" id="hStage" aria-hidden="true"></div>
 
-        <p class="bar-note" id="barNote">Заявки теряются, отчёты горят, команда тонет в рутине. <span>Цифры условные.</span></p>
+      <aside class="h-panel h-out" aria-label="Обработанные лиды">
+        <header class="h-ph h-ph-green"><span class="ph-ico" data-ico="database"></span><b>Обработанные лиды</b><span class="ph-count" id="cntOut">28</span></header>
+        <ul class="h-list" id="listOut"></ul>
+      </aside>
+
+      <div class="h-bar">
+        <div class="h-stat"><small>Получаем заявок в месяц</small><span><b>247</b><i class="h-bars" data-ico="bars"></i></span></div>
+        <span class="h-div" aria-hidden="true"></span>
+        <div class="h-stat"><small>Экономим команде в неделю</small><span><b>62 часа</b><i class="h-clock" data-ico="clock"></i></span></div>
+        <a class="btn btn-ink h-cta" href="#demo">Попробовать на своей заявке <span aria-hidden="true">→</span></a>
+        <div class="seg" id="seg" role="radiogroup" aria-label="Как работает бизнес">
+          <span class="seg-thumb" aria-hidden="true"></span>
+          <button type="button" role="radio" aria-checked="false" id="segOff" tabindex="-1">Вручную</button>
+          <button type="button" role="radio" aria-checked="true" id="segOn">С агентами</button>
+        </div>
+        <div class="h-proof">
+          <span class="avs"><i style="--a:#f3c9a8;--b:#c98a64">А</i><i style="--a:#d7c7f0;--b:#9a82c7">М</i><i style="--a:#bfe3d0;--b:#6fae8f">И</i></span>
+          <span>Уже 200+ компаний<br>внедрили агентов</span>
+        </div>
+        <span class="h-note">Цифры условные</span>
       </div>
 
-      <!-- Если WebGL недоступен -->
-      <div class="no-webgl" role="note">3D-сцена недоступна в этом браузере, но переключатель ниже работает.</div>
+      <div class="no-webgl" role="note">3D-сцена недоступна в этом браузере, но заявки по-прежнему работают.</div>
       <div class="sr" id="live" aria-live="polite"></div>
     </section>
 

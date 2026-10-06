@@ -2,87 +2,27 @@ import { animate, inView, scroll, stagger } from 'motion';
 import { initDemo } from './demo.js';
 import { initProducts } from './products.js';
 import { initContact } from './contact.js';
+import { initHero } from './hero.js';
+import { ico } from './icons.js';
 
 const $ = (id) => document.getElementById(id);
-const hero = $('hero'), hint = $('heroHint'), barNote = $('barNote'), live = $('live');
-const tgChaos = $('tgChaos'), tgOrder = $('tgOrder');
-const nLost = $('nLost'), nHours = $('nHours');
+const hero = $('hero');
 
-const TEXT = {
-  chaos: {
-    note: 'Заявки теряются, отчёты горят, команда тонет в рутине. <span>Цифры условные.</span>',
-    hint: 'Кликните по любой заявке — агент разберёт её.',
-    live: 'Режим: вручную. Заявки теряются, рутина растёт.',
-  },
-  order: {
-    note: 'Агенты отвечают клиентам, собирают отчёты и разбирают почту. Вы видите результат. <span>Цифры условные.</span>',
-    hint: 'Всё разобрано. Нажмите «Вручную», чтобы увидеть, как было.',
-    live: 'Режим: с агентами. Заявки обработаны, рутина сократилась.',
-  },
-};
+/* иконки, заданные в разметке как data-ico */
+document.querySelectorAll('#hero [data-ico]').forEach((el) => { el.innerHTML = ico(el.dataset.ico); });
 
-/* цифры в панели следят за долей разобранных заявок в сцене */
-let target = 0, shown = 0, rafId = 0;
-function paintStats(f) {
-  nLost.textContent = String(Math.round(37 * (1 - f)));
-  nHours.textContent = Math.round(62 - 53 * f) + ' ч';
-}
-function chase() {
-  shown += (target - shown) * 0.12;
-  if (Math.abs(target - shown) < 0.004) shown = target;
-  paintStats(shown);
-  rafId = shown === target ? 0 : requestAnimationFrame(chase);
-}
-function setProgress(f) { target = f; if (!rafId) rafId = requestAnimationFrame(chase); }
-
-/* режим интерфейса */
-let uiMode = 'chaos';
-function setUi(mode) {
-  if (mode === uiMode) return;
-  uiMode = mode;
-  const order = mode === 'order';
-  hero.dataset.state = mode;
-  tgChaos.setAttribute('aria-checked', String(!order)); tgOrder.setAttribute('aria-checked', String(order));
-  tgChaos.tabIndex = order ? -1 : 0; tgOrder.tabIndex = order ? 0 : -1;
-  live.textContent = TEXT[mode].live;
-  [barNote, hint].forEach((el) => el.classList.add('fade'));
-  setTimeout(() => {
-    barNote.innerHTML = TEXT[mode].note; hint.textContent = TEXT[mode].hint;
-    [barNote, hint].forEach((el) => el.classList.remove('fade'));
-  }, 220);
-}
-
-/* 3D-сцена (если WebGL недоступен, остаётся рабочий переключатель с цифрами) */
-let scene = null;
+/* главный экран: DOM-логика работает всегда, 3D подключается, если доступен WebGL */
+const heroCtl = initHero(null);
 (async () => {
   try {
-    const { createHeroScene } = await import('./scene.js');
-    if (document.fonts && document.fonts.load) {
-      await Promise.race([
-        Promise.all([document.fonts.load('600 40px Onest'), document.fonts.load('700 22px "JetBrains Mono"')]),
-        new Promise((r) => setTimeout(r, 1500)),
-      ]);
-    }
-    scene = createHeroScene($('scene'), {
-      onProgress: (f) => setProgress(f),
-      onMode: (m) => setUi(m),
-    });
+    const { createHero3D } = await import('./hero3d.js');
+    const scene3d = createHero3D($('scene'), hero, $('hStage'));
+    heroCtl.setScene(scene3d);
   } catch (err) {
     console.warn('3D-сцена недоступна:', err);
     hero.classList.add('is-fallback');
   }
 })();
-
-function choose(mode) {
-  if (scene) scene.setMode(mode); else setProgress(mode === 'order' ? 1 : 0);
-  setUi(mode);
-}
-tgChaos.addEventListener('click', () => choose('chaos'));
-tgOrder.addEventListener('click', () => choose('order'));
-$('toggle').addEventListener('keydown', (e) => {
-  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); choose('order'); tgOrder.focus(); }
-  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); choose('chaos'); tgChaos.focus(); }
-});
 
 /* демо агента */
 initDemo();
@@ -95,7 +35,7 @@ initContact();
 const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
 if (!calm) {
   document.documentElement.classList.add('motion-ready');
-  animate('.hero-copy .eyebrow, .hero h1', { opacity: [0, 1], y: [28, 0] }, { delay: stagger(0.12), duration: 0.9, ease: [0.2, 0.8, 0.2, 1] });
+  animate('.h-copy .eyebrow, .hero h1', { opacity: [0, 1], y: [28, 0] }, { delay: stagger(0.12), duration: 0.9, ease: [0.2, 0.8, 0.2, 1] });
   scroll(animate('#progress', { scaleX: [0, 1] }, { ease: 'linear' }));
   inView('.reveal', (el) => {
     const sibs = [...el.parentElement.children].filter((c) => c.classList.contains('reveal'));
