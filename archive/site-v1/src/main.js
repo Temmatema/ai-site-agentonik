@@ -16,16 +16,14 @@ const hero = $('hero');
 /* иконки, заданные в разметке как data-ico */
 document.querySelectorAll('#hero [data-ico]').forEach((el) => { el.innerHTML = ico(el.dataset.ico); });
 
-/* главный экран: DOM-логика работает всегда, 3D подключается, если доступен WebGL */
+/* главный экран: DOM-логика работает сразу, маскот подключается, когда загрузятся его кадры */
 const heroCtl = initHero(null);
 (async () => {
   try {
-    const { createHero3D } = await import('./hero3d.js');
-    const scene3d = createHero3D($('scene'), hero, $('hStage'));
-    heroCtl.setScene(scene3d);
+    const { createMascot } = await import('./mascot.js');
+    heroCtl.setScene(await createMascot($('mascot'), hero, $('hStage'), $('hSoft')));
   } catch (err) {
-    console.warn('3D-сцена недоступна:', err);
-    hero.classList.add('is-fallback');
+    console.warn('Маскот не загрузился:', err);
   }
 })();
 
