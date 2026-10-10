@@ -1,29 +1,18 @@
 // Шапка: получает фон после начала прокрутки, черта ездит под пунктом текущего раздела,
-// глаза в логотипе следят за курсором, на узких экранах меню открывается кнопкой.
+// на узких экранах меню открывается кнопкой. Логотип — мордочка маскота (src/assets/logo.webp).
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import Icon from './Icon.jsx';
+import logo from '../assets/logo.webp';
 
 const LINKS = [['#demo', 'Как это работает'], ['#products', 'Продукты'], ['#cases', 'Кейсы'], ['#faq', 'Вопросы'], ['#contact', 'Контакты']];
 // какой пункт меню подсвечивать, пока на экране секция с этим id
 const OWNER = { demo: '#demo', calc: '#demo', products: '#products', cases: '#cases', faq: '#faq', contact: '#contact' };
 
 export function Brand() {
-  const mark = useRef(null);
-  useEffect(() => {
-    const move = (e) => {
-      if (e.pointerType !== 'mouse' || !mark.current) return;
-      const r = mark.current.getBoundingClientRect();
-      const dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2), d = Math.hypot(dx, dy) || 1, k = Math.min(1, d / 160);
-      mark.current.style.setProperty('--ex', ((dx / d) * 2.2 * k).toFixed(2) + 'px');
-      mark.current.style.setProperty('--ey', ((dy / d) * 1.8 * k).toFixed(2) + 'px');
-    };
-    window.addEventListener('pointermove', move, { passive: true });
-    return () => window.removeEventListener('pointermove', move);
-  }, []);
   return (
     <a className="brand" href="#hero" aria-label="АгентникАИ — наверх">
-      <span className="brand-mark" ref={mark} aria-hidden="true"><i /><i /></span>
+      <img className="brand-mark" src={logo} alt="" width="176" height="192" decoding="async" />
       АгентникАИ
     </a>
   );

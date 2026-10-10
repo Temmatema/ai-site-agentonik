@@ -1,28 +1,31 @@
 import DATA from './mascot/frames.json';
+import MAN from './mascot/man.json';
 
 /*
- * Маскот главного экрана. Это не 3D, а кадры из видео (src/mascot/mascot-slow-4.mp4): зверёк смотрит
- * влево с прищуром, моргает и поворачивается вправо с широко открытыми глазами. Кадры вырезаны
- * с прозрачным фоном, поэтому маскот стоит прямо на тёмном поле страницы. Глаза и зрачки — только
- * из видео, ничего не дорисовывается.
+ * Маскот главного экрана. Это не 3D, а кадры из видео (src/mascot/mascot-new-4k.mp4, 60 кадров/с): зверёк смотрит влево,
+ * щурится, моргает и поворачивается вправо. Кадры идут со скоростью ролика, без смешивания: где зверёк движется — все подряд, где почти замер — через один; тёмный фон
+ * видео убран в прозрачность, поэтому маскот стоит прямо на поле страницы. Глаза и зрачки — только из видео.
  *
- * Положение курсора по горизонтали — это место в ролике (0 — влево, 1 — вправо); место каждого кадра
- * на этой шкале записано в frames.json (p), там же место кадра с закрытыми глазами (closed).
- * Левая треть шкалы — прищур, дальше моргание и поворот, в конце взгляд вправо.
- * Пока курсор движется, взгляд идёт за ним непрерывно, плавно перетекая из кадра в кадр. Когда курсор
- * остановился, взгляд доходит до ближайшего целого кадра и замирает на нём: между двумя кадрами
- * картинка двоится. На месте маскот только дышит.
+ * Поз две: взгляд влево (начало ролика) и взгляд вправо (конец). Курсор левее маскота — он поворачивается
+ * влево, правее — вправо; поворот — это ролик, проигранный целиком за TURN секунд, вместе с морганием
+ * посередине. За самим курсором взгляд не ездит. Без курсора (и на телефоне) маскот сам смотрит
+ * то влево, то вправо. На месте он только дышит.
  *
- * Вручную маскот закрывает глаза и ждёт. Наборов кадров два: hd для компьютера и sd для телефона,
+ * Вручную маскота сменяет уставший человек за ноутбуком (src/mascot/tired-man-4k.mp4): те же две позы, влево
+ * и вправо, между ними он прикрывает глаза и поворачивает голову. Его кадры догружаются уже после маскота.
+ *
+ * Вручную сам маскот закрывает глаза и ждёт. Наборов кадров два: hd для компьютера и sd для телефона,
  * каждый разложен на несколько файлов. Маскот появляется, когда загружены все: onProgress получает долю 0..1.
  */
 
-const SHEETS = import.meta.glob('./mascot/{hd,sd}-*.webp', { eager: true, query: '?url', import: 'default' });
-const { cols: COLS, tiers: TIERS, sets: SETS, p: POS, closed: CLOSED } = DATA;
-const EYES_Y = 0.4;             // уровень глаз в кадре (доля высоты)
+const SHEETS = import.meta.glob('./mascot/{hd,sd,man-hd,man-sd}-*.webp', { eager: true, query: '?url', import: 'default' });
+const CLOSED = DATA.closed;
 const ANCHOR_Y = 0.62;          // куда влетают карточки: середина тела
-const SETTLE = 0.14;            // через сколько секунд без движения мыши взгляд доводится до целого кадра
-const FOLLOW = 6.5;             // как быстро взгляд догоняет курсор: меньше — плавнее, но с бóльшим отставанием
+const TURN = 2;               // сколько секунд длится поворот из стороны в сторону: 3.3 — скорость исходного видео
+const MAN_TURN = 1.28;          // то же для человека: 1.28 — скорость исходного видео
+const IDLE_HOLD = 5.5;          // без курсора: сколько секунд маскот смотрит в одну сторону, прежде чем повернуться
+const DEAD = 0.06;              // мёртвая зона у середины, чтобы маскот не дёргался, когда курсор стоит прямо под ним
+const SMOOTH_OFF = 0.8;         // за сколько секунд маскот закрывает глаза в режиме «Вручную»
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const damp = (cur, target, k, dt) => cur + (target - cur) * (1 - Math.exp(-k * dt));
@@ -50,55 +53,68 @@ function locate(table, g) {
   return [i, clamp((g - table[i]) / (table[i + 1] - table[i] || 1), 0, 1)];
 }
 
-export async function createMascot(canvas, hero, onProgress = () => {}) {
+// набор кадров: спрайты разложены на несколько файлов, кадр i лежит в файле i % tiers.
+// Каждый лист после загрузки режем на отдельные кадры и сам лист выбрасываем. Лист маскота — это 4200×4620 точек
+// (около 78 МБ в памяти видеокарты), и соседние кадры лежат в разных листах: пока рисовали прямо из листов, поворот
+// заставлял видеокарту держать и подгружать все шесть разом, отчего страница подтормаживала. Отдельный кадр весит 3 МБ
+async function loadSet(data, prefix, set, onProgress = () => {}) {
+  const { cols, tiers: n, p } = data, { w, h } = data.sets[set];
+  // при включённой экономии трафика берём только первый файл: движение будет грубее, но картинка появится быстро
+  const want = navigator.connection && navigator.connection.saveData ? [0] : [...Array(n).keys()];
+  const part = Array(n).fill(0), tiers = Array(n).fill(null);
+  await Promise.all(want.map(async (k) => {
+    const sheet = await load(SHEETS[`./mascot/${prefix}${set}-${k}.webp`], (v) => { part[k] = v; onProgress(want.reduce((s, i) => s + part[i], 0) / want.length); });
+    const count = Math.ceil((p.length - k) / n);   // сколько кадров лежит в этом листе
+    tiers[k] = await Promise.all(Array.from({ length: count }, (_, c) => createImageBitmap(sheet, (c % cols) * w, Math.floor(c / cols) * h, w, h)));
+    sheet.close();
+  }));
+  const frames = p.map((pos, i) => ({ p: pos, img: tiers[i % n] && tiers[i % n][Math.floor(i / n)] })).filter((fr) => fr.img);
+  return { w, h, frames, table: frames.map((fr) => fr.p) };
+}
+// рисует на холсте кадр, ближайший к месту g на шкале. Кадры не смешиваем: наложение двух даёт муть и видимые «слайды»
+function painter(canvas, { w, h, frames, table }) {
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  let drawn = -1;
+  return (g) => {
+    const [bi, bk] = locate(table, g), i = bk > 0.5 && frames[bi + 1] ? bi + 1 : bi;
+    if (i === drawn) return;
+    drawn = i;
+    ctx.clearRect(0, 0, w, h);
+    ctx.drawImage(frames[i].img, 0, 0);
+  };
+}
+
+export async function createMascot(canvas, hero, onProgress = () => {}, manCanvas = null) {
   const reduce = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
   const set = matchMedia('(min-width: 1001px)').matches ? 'hd' : 'sd';
-  const { w: W, h: H } = SETS[set], url = (tier) => SHEETS[`./mascot/${set}-${tier}.webp`];
-  canvas.width = W; canvas.height = H;
-  const ctx = canvas.getContext('2d');
-
-  // при включённой экономии трафика берём только первый файл: движение будет грубее, но маскот появится быстро
-  const want = navigator.connection && navigator.connection.saveData ? [0] : [...Array(TIERS).keys()];
-  const part = Array(TIERS).fill(0);
-  const tiers = Array(TIERS).fill(null);
-  await Promise.all(want.map(async (k) => {
-    tiers[k] = await load(url(k), (v) => { part[k] = v; onProgress(want.reduce((s, i) => s + part[i], 0) / want.length); });
-  }));
-  const frames = POS.map((p, i) => ({ p, img: tiers[i % TIERS], cell: Math.floor(i / TIERS) })).filter((fr) => fr.img);
-  const table = frames.map((fr) => fr.p);
+  const body = await loadSet(DATA, '', set, onProgress), table = body.table;
+  const draw = painter(canvas, body);
 
   /* состояние */
-  let t = 0, last = 0, pos = 1, drawn = -1, on = true, glow = 0, pulseT = 0, lookX = 0, lookY = 0, still = 0, running = true, visible = true, raf = 0;
-  const pointer = { x: 0, y: 0, inside: false };
-
-  function draw(g) {
-    const [bi, bk] = locate(table, g), a = frames[bi], b = frames[bi + 1] || a;
-    const put = (fr) => ctx.drawImage(fr.img, (fr.cell % COLS) * W, Math.floor(fr.cell / COLS) * H, W, H, 0, 0, W, H);
-    ctx.clearRect(0, 0, W, H);
-    ctx.globalAlpha = 1; put(a);
-    if (bk > 0.02 && b !== a) { ctx.globalAlpha = bk; put(b); ctx.globalAlpha = 1; }
-  }
+  let t = 0, last = 0, side = 1, turn = 1, turnMan = 1, shown = 1, drawMan = null, dead = false, on = true, glow = 0, pulseT = 0, lookX = 0, running = true, visible = true, raf = 0;
+  const pointer = { x: 0, inside: false };
+  const [ci, ck] = locate(table, CLOSED), closed = table[ck > 0.5 ? Math.min(ci + 1, table.length - 1) : ci];
 
   function update(dt) {
-    t += dt; still += dt;
+    t += dt;
     pulseT *= Math.exp(-2.4 * dt);
     glow = damp(glow, Math.min(1, pulseT), 9, dt);
 
-    // за курсором; без него (и на телефоне) маскот сам неспешно оглядывается; вручную закрывает глаза
-    const gazeX = pointer.inside ? pointer.x : Math.sin(t * 0.55) * Math.sin(t * 0.21 + 1) * 0.85;
-    const gazeY = pointer.inside ? pointer.y : Math.sin(t * 0.37 + 2) * 0.35;
-    const goal = !on ? CLOSED : reduce ? 1 : clamp(gazeX * 0.5 + 0.5, 0, 1);
-    // в движении идём к самой точке курсора, на месте — к ближайшему целому кадру
-    const [ti, tk] = locate(table, goal), whole = table[tk > 0.5 ? Math.min(ti + 1, table.length - 1) : ti];
-    const rest = !on || reduce || (pointer.inside && still > SETTLE);
-    const target = rest ? whole : goal;
-    pos = reduce ? target : damp(pos, target, on ? FOLLOW : 2.5, dt);
-    if (rest && Math.abs(target - pos) < 0.0006) pos = target;
-    if (Math.abs(pos - drawn) > 0.0004) { draw(pos); drawn = pos; }
+    // сторона: где курсор, туда и смотрит; без него (и на телефоне) — по очереди влево и вправо
+    if (!pointer.inside) side = Math.floor(t / IDLE_HOLD) % 2 ? 0 : 1;
+    else if (pointer.x > DEAD) side = 1; else if (pointer.x < -DEAD) side = 0;
+    // ролик идёт ровно, как в исходном видео: плавность движения в нём уже есть
+    turn = clamp(turn + (side ? dt : -dt) / TURN, 0, 1);
+    const aim = !on ? closed : reduce ? side : turn;
+    shown = !on && !reduce ? damp(shown, aim, 2 / SMOOTH_OFF, dt) : aim;
+    draw(shown);
+    turnMan = clamp(turnMan + (side ? dt : -dt) / MAN_TURN, 0, 1);
+    if (drawMan && !on) drawMan(reduce ? side : turnMan);
 
-    // тело: дышит, клонится за курсором, на заявку коротко «сглатывает»; вручную оседает
-    const calm = reduce ? 0 : 1;
-    lookX = damp(lookX, !on || reduce ? 0 : gazeX, on ? 5 : 2, dt); lookY = damp(lookY, on ? gazeY : -0.5, 5, dt);
+    // тело: дышит, клонится в сторону взгляда, на заявку коротко «сглатывает»; вручную оседает
+    const calm = reduce ? 0 : 1, lookY = on ? 0 : -0.5;
+    lookX = damp(lookX, on ? turn * 2 - 1 : 0, on ? 5 : 2, dt);
     const breath = Math.sin(t * (on ? 1.9 : 1.1)) * 0.01 * calm;
     const sx = 1 - breath * 0.6 - lookY * 0.006 + glow * 0.04 + (on ? 0 : 0.015);
     const sy = 1 + breath + lookY * 0.012 - glow * 0.045 - (on ? 0 : 0.025);
@@ -112,13 +128,12 @@ export async function createMascot(canvas, hero, onProgress = () => {}) {
     update(dt);
   }
 
-  // курсор считаем от маскота по всему окну: x — доля ширины экрана, y — вверх от уровня глаз
+  // курсор считаем от середины маскота: левее — минус, правее — плюс
   const onMove = (e) => {
     if (e.pointerType !== 'mouse') return;
     const r = canvas.parentElement.getBoundingClientRect();
     pointer.x = clamp((e.clientX - (r.left + r.width / 2)) / (window.innerWidth * 0.4), -1, 1);
-    pointer.y = clamp(-(e.clientY - (r.top + r.height * EYES_Y)) / (window.innerHeight * 0.35), -1, 1);
-    pointer.inside = true; still = 0;
+    pointer.inside = true;
   };
   const onLeave = () => { pointer.inside = false; };
   window.addEventListener('pointermove', onMove, { passive: true });
@@ -128,8 +143,14 @@ export async function createMascot(canvas, hero, onProgress = () => {}) {
   const onVis = () => { running = !document.hidden; };
   document.addEventListener('visibilitychange', onVis);
 
-  draw(pos); drawn = pos;
+  draw(shown);
   canvas.parentElement.classList.add('is-ready');
+  // человек нужен только в ручном режиме, поэтому его кадры качаем после маскота; до тех пор стоит картинка-заглушка
+  if (manCanvas) loadSet(MAN, 'man-', set).then((m) => {
+    if (dead) return;
+    drawMan = painter(manCanvas, m); drawMan(reduce ? side : turnMan);
+    manCanvas.parentElement.classList.add('is-live');
+  }).catch((err) => console.warn('Кадры человека не загрузились:', err));
   last = performance.now(); raf = requestAnimationFrame(frame);
 
   return {
@@ -140,6 +161,6 @@ export async function createMascot(canvas, hero, onProgress = () => {}) {
       return { x: r.left - hr.left + r.width / 2, y: r.top - hr.top + r.height * ANCHOR_Y };
     },
     setMode(v) { on = v; },
-    dispose() { cancelAnimationFrame(raf); io && io.disconnect(); window.removeEventListener('pointermove', onMove); document.documentElement.removeEventListener('pointerleave', onLeave); document.removeEventListener('visibilitychange', onVis); },
+    dispose() { dead = true; cancelAnimationFrame(raf); io && io.disconnect(); window.removeEventListener('pointermove', onMove); document.documentElement.removeEventListener('pointerleave', onLeave); document.removeEventListener('visibilitychange', onVis); },
   };
 }

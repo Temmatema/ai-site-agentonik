@@ -7,6 +7,39 @@ import { useTask } from '../task.js';
 import Icon from './Icon.jsx';
 import Title from './Title.jsx';
 
+// Фон-чертёж: тусклая сетка, которая отзывается на мышь. Вокруг курсора она проявляется ярче (пятно идёт за ним
+// с небольшим отставанием), а клетка, над которой он стоит, подсвечивается. Шаг и сдвиг сетки — как в .tgrid в стилях
+const CELL = 240, SHIFT = 90;
+function GridBg() {
+  const ref = useRef(null);
+  useEffect(() => {
+    const el = ref.current, host = el.parentElement;
+    if (!matchMedia('(hover: hover)').matches) return undefined;
+    const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let raf = 0, tx = 0, ty = 0, x = 0, y = 0, first = true;
+    const tick = () => {
+      x += (tx - x) * 0.14; y += (ty - y) * 0.14;
+      el.style.setProperty('--mx', `${x.toFixed(1)}px`); el.style.setProperty('--my', `${y.toFixed(1)}px`);
+      raf = Math.abs(tx - x) + Math.abs(ty - y) > 0.4 ? requestAnimationFrame(tick) : 0;
+    };
+    const move = (e) => {
+      if (e.pointerType !== 'mouse') return;
+      const r = el.getBoundingClientRect();
+      tx = e.clientX - r.left; ty = e.clientY - r.top;
+      if (first || calm) { x = tx; y = ty; first = false; }
+      el.style.setProperty('--cx', `${Math.floor((tx - SHIFT) / CELL) * CELL + SHIFT}px`);
+      el.style.setProperty('--cy', `${Math.floor((ty - SHIFT) / CELL) * CELL + SHIFT}px`);
+      el.classList.add('is-on');
+      if (!raf) raf = requestAnimationFrame(tick);
+    };
+    const leave = () => { el.classList.remove('is-on'); first = true; };
+    host.addEventListener('pointermove', move, { passive: true });
+    host.addEventListener('pointerleave', leave);
+    return () => { cancelAnimationFrame(raf); host.removeEventListener('pointermove', move); host.removeEventListener('pointerleave', leave); };
+  }, []);
+  return <div className="tgrid" ref={ref} aria-hidden="true"><i className="tgrid-lit" /><i className="tgrid-cell" /></div>;
+}
+
 function Range({ id, label, value, out, min, max, step, onChange }) {
   return (
     <label className="roi-f" htmlFor={id}>
@@ -32,7 +65,8 @@ export default function Calc() {
   }, [rub, calm]);
 
   return (
-    <section className="section roi" id="calc">
+    <section className="section roi has-glow" id="calc">
+      <GridBg />
       <div className="wrap roi-grid">
         <div className="roi-left">
           <Title>Сколько времени агент <em>вернёт команде</em></Title>

@@ -9,6 +9,7 @@ import { useTask } from '../task.js';
 import bot from '../assets/mascot-left.webp';
 import Icon from './Icon.jsx';
 import Title from './Title.jsx';
+import Glow from './Glow.jsx';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -61,7 +62,8 @@ export default function Faq() {
   };
 
   return (
-    <section className="section faq" id="faq">
+    <section className="section faq has-glow" id="faq">
+      <Glow variant="e" />
       <div className="wrap faq-grid">
         <div>
           <Title>Спросите агента <em>сами</em></Title>
@@ -77,7 +79,7 @@ export default function Faq() {
 
         <div className="faq-chat">
           <header className="faq-head"><img className="faq-bot" src={bot} alt="" width="40" height="48" /><div><b>Агент</b><span className="cap">онлайн, отвечает сразу</span></div></header>
-          <div className="faq-msgs" ref={box} aria-live="polite">
+          <div className="faq-msgs" ref={box} aria-live="polite" data-lenis-prevent>
             {msgs.map((m) => (
               <motion.div key={m.id} className={`faq-msg faq-from-${m.who}`} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, ease: 'easeOut' }}>
                 {m.dots ? <span className="faq-dots"><i /><i /><i /></span> : m.text}

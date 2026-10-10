@@ -1,14 +1,20 @@
 // Главный экран: красные заявки слева влетают в маскота и вылетают справа обработанными (зелёными).
 // В режиме «С агентами» маскот берёт все заявки разом, пачкой; клик по заявке обрабатывает её сразу.
-// Вручную заявки копятся, а заголовок справа меняется. Данные условные.
+// Вручную всё как в жизни: слева заявки валятся кучей, человек разбирает их по одной и медленно,
+// справа сначала пусто, и обработанные заявки появляются по одной. Заголовок справа меняется. Данные условные.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { CH, LEADS, VISIBLE, HOURS_PER_LEAD, initials } from '../data/leads.js';
 import Icon from './Icon.jsx';
+import manTired from '../mascot/man-tired.webp';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const NS = 'http://www.w3.org/2000/svg';
 const SPRING = { type: 'spring', stiffness: 220, damping: 26 };
+const rnd = (a, b) => a + Math.random() * (b - a);
+// точки на кадре человека (доли ширины и высоты). Провода уходят ему за спину и выходят из-за ноутбука (MAN_IN, MAN_OUT),
+// MAN_FAN — на какую долю высоты кадра они расходятся веером; карточки летят в клавиатуру и из крышки (MAN_KEYS, MAN_LID)
+const MAN_IN = [0.38, 0.63], MAN_OUT = [0.62, 0.68], MAN_FAN = 0.34, MAN_KEYS = [0.5, 0.82], MAN_LID = [0.8, 0.66];
 
 function LeadIn({ lead }) {
   const c = CH[lead.ch];
@@ -38,16 +44,18 @@ function LeadOut({ o }) {
 
 export default function Hero() {
   const calm = useReducedMotion();
-  const heroRef = useRef(null), archRef = useRef(null), canvasRef = useRef(null), svgRef = useRef(null);
+  const heroRef = useRef(null), archRef = useRef(null), canvasRef = useRef(null), manRef = useRef(null), svgRef = useRef(null), dotsRef = useRef(null);
   const listInRef = useRef(null), listOutRef = useRef(null);
-  const els = useRef(new Map()), mascot = useRef(null), uid = useRef(100), nextIdx = useRef(0);
+  const els = useRef(new Map()), mascot = useRef(null), uid = useRef(100), nextIdx = useRef(0), doneManual = useRef(0), wireSeeds = useRef([]);
   const S = useRef({ on: true, inbox: [], busy: new Set(), alive: true, visible: true, vis: VISIBLE });
 
   const [on, setOn] = useState(true);
   const [tried, setTried] = useState(0); // 0 — ещё не трогали, 1 — выключили, 2 — вернули агентов
   const [inbox, setInbox] = useState([]);
   const [out, setOut] = useState([]);
+  const [manual, setManual] = useState([]);   // что человек успел обработать вручную: с начала режима список пуст
   const [flights, setFlights] = useState([]);
+  const [pile, setPile] = useState([]);   // вручную: заявки, наваленные поверх списка входящих
   const [counts, setCounts] = useState({ in: 37, out: 28, hours: 62 });
   const [live, setLive] = useState('');
   const [load, setLoad] = useState(0);     // доля загруженных кадров маскота
@@ -67,7 +75,7 @@ export default function Hero() {
     let dead = false, ctl = null;
     S.current.alive = true;
     import('../mascot.js')
-      .then(({ createMascot }) => createMascot(canvasRef.current, heroRef.current, (v) => { if (!dead) setLoad(v); }))
+      .then(({ createMascot }) => createMascot(canvasRef.current, heroRef.current, (v) => { if (!dead) setLoad(v); }, manRef.current))
       .then((c) => { if (dead) c.dispose(); else { ctl = c; mascot.current = c; c.setMode(S.current.on); setReady(true); } })
       // без маскота экран всё равно должен работать: снимаем загрузку и запускаем заявки
       .catch((err) => { console.warn('Маскот не загрузился:', err); if (!dead) setReady(true); });
@@ -81,7 +89,14 @@ export default function Hero() {
     const hr = heroRef.current.getBoundingClientRect(), r = el.getBoundingClientRect();
     return { x: r.left - hr.left + r.width / 2, y: r.top - hr.top + r.height / 2 };
   };
-  const anchor = () => {
+  // точка на кадре человека в координатах hero. Считаем от раскладки, а не от экрана: пока он появляется, его блок сдвинут и сжат
+  const manPoint = ([fx, fy]) => {
+    const box = manRef.current.parentElement, wr = box.parentElement.getBoundingClientRect(), hr = heroRef.current.getBoundingClientRect();
+    return { x: wr.left - hr.left + wr.width / 2 + (fx - 0.5) * box.offsetWidth, y: wr.bottom - hr.top - (1 - fy) * box.offsetHeight };
+  };
+  // куда влетает заявка и откуда вылетает готовая: у маскота это середина тела, у человека — клавиатура и крышка ноутбука
+  const anchor = (side = 'in') => {
+    if (!S.current.on && manRef.current) return manPoint(side === 'in' ? MAN_KEYS : MAN_LID);
     if (mascot.current) return mascot.current.anchor();
     const hr = heroRef.current.getBoundingClientRect(), r = archRef.current.getBoundingClientRect();
     return { x: r.left - hr.left + r.width / 2, y: r.top - hr.top + r.height * 0.7 };
@@ -94,7 +109,7 @@ export default function Hero() {
     if (!item || !el || st.busy.has(id)) return;
     st.busy.add(id);
     const fast = st.on, small = matchMedia('(max-width: 1000px)').matches; // с агентами всё в разы быстрее, чем вручную
-    const T = !fast ? { in: 1.6, hold: 900, out: 1.4 } : small ? { in: 0.7, hold: 140, out: 0.7 } : { in: 0.6, hold: 120, out: 0.6 };
+    const T = !fast ? { in: 1.2, hold: 0, out: 1.2 } : small ? { in: 0.55, hold: 100, out: 0.55 } : { in: 0.45, hold: 80, out: 0.45 };
     const swapIn = () => {
       const lead = LEADS[nextIdx.current++ % LEADS.length];
       setInbox((l) => [...l.filter((x) => x.id !== id), { id: ++uid.current, lead }]);
@@ -116,13 +131,20 @@ export default function Hero() {
     if (!st.alive) return;
 
     if (!calm && listOutRef.current) {
-      const a = anchor(), box = listOutRef.current, to = centre(box.firstElementChild || box), fid = ++uid.current;
+      const a = anchor('out'), box = listOutRef.current, to = centre(box.querySelector('.lead-slot') || box.firstElementChild || box), fid = ++uid.current;
       setFlights((f) => [...f, { id: fid, kind: 'out', o: item.lead.out, x: to.x, y: to.y, w: box.offsetWidth, dx: a.x - to.x, dy: a.y - to.y, dur: T.out }]);
       await sleep(T.out * 1000);
       if (!st.alive) return;
       setFlights((f) => f.filter((x) => x.id !== fid));
     }
-    setOut((o) => [{ id: ++uid.current, o: item.lead.out }, ...o].slice(0, st.vis));
+    // чья заявка — решает режим, в котором её взяли: то, что агент не донёс до переключения, человеку не засчитываем
+    if (fast) setOut((o) => [{ id: ++uid.current, o: item.lead.out }, ...o].slice(0, st.vis));
+    else {
+      // вручную заявка встаёт в первое пустое место; когда мест не осталось, самая старая уходит и снизу снова пусто
+      setManual((m) => [...m, { id: ++uid.current, o: item.lead.out }]);
+      setTimeout(() => { if (st.alive) setManual((m) => (m.length >= st.vis ? m.slice(1) : m)); }, 1400);
+    }
+    if (!fast) doneManual.current += 1;
     setCounts((c) => ({ ...c, out: c.out + 1, hours: fast ? c.hours + HOURS_PER_LEAD : c.hours })); // вручную время команды не экономится
     st.busy.delete(id);
   }, [calm]);
@@ -137,14 +159,40 @@ export default function Hero() {
         const st = S.current;
         if (st.visible && !document.hidden) {
           const batch = st.inbox.filter((x) => !st.busy.has(x.id));
-          await Promise.all(batch.map((x, i) => sleep(i * (small ? 240 : 170)).then(() => !stop && process(x.id))));
+          await Promise.all(batch.map((x, i) => sleep(i * (small ? 190 : 130)).then(() => !stop && process(x.id))));
         }
         if (!stop) tick();
-      }, small ? 900 : 1100);
+      }, small ? 750 : 850);
     };
     const first = setTimeout(tick, 500);
     return () => { stop = true; clearTimeout(timer); clearTimeout(first); };
   }, [on, calm, ready, process]);
+
+  /* вручную человек берёт по одной заявке, и то не сразу: следующую — только когда закончил с предыдущей */
+  useEffect(() => {
+    if (on || calm || !ready) return undefined;
+    const take = () => {
+      const st = S.current;
+      if (!st.visible || document.hidden || st.busy.size) return;
+      const free = st.inbox;
+      if (free.length) process(free[Math.floor(Math.random() * free.length)].id);
+    };
+    const first = setTimeout(take, 4000), t = setInterval(take, 10000);
+    return () => { clearTimeout(first); clearInterval(t); };
+  }, [on, calm, ready, process]);
+
+  /* вручную заявки копятся кучей: падают вкривь поверх списка и торчат за края. С агентами куча разом улетает */
+  useEffect(() => {
+    if (on) { setPile([]); return undefined; }
+    const max = S.current.vis < VISIBLE ? 5 : 10;
+    const drop = () => setPile((p) => (p.length >= max ? p : [...p, {
+      id: ++uid.current, lead: LEADS[Math.floor(Math.random() * LEADS.length)],
+      x: rnd(-38, 44), top: rnd(12, 86), r: (Math.random() < 0.5 ? -1 : 1) * rnd(2.5, 8),
+    }]));
+    const first = [0, 1, 2, 3].map((i) => setTimeout(drop, 200 + i * 150));
+    const t = setInterval(() => { if (S.current.visible && !document.hidden) drop(); }, 1800);
+    return () => { first.forEach(clearTimeout); clearInterval(t); };
+  }, [on]);
 
   /* новые заявки приходят всегда; вручную очередь растёт заметно быстрее */
   useEffect(() => {
@@ -159,44 +207,63 @@ export default function Hero() {
   const setMode = (next) => {
     if (next === on) return;
     setOn(next);
+    if (!next) { setManual([]); doneManual.current = 0; }
     setTried((t) => (next ? (t ? 2 : 0) : Math.max(t, 1)));
     setLive(next ? 'Режим: с агентами. Заявки разбираются автоматически.' : 'Режим: вручную. Заявки копятся.');
   };
-  const segKey = (e) => {
-    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); setMode(true); e.currentTarget.querySelector('#segOn').focus(); }
-    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); setMode(false); e.currentTarget.querySelector('#segOff').focus(); }
-  };
 
-  /* провода: от каждой заявки к проёму и от проёма к обработанным, по ним бегут точки */
+  /* провода: от каждой заявки к проёму и от проёма к обработанным, по ним бегут точки.
+     Вручную они так же уходят человеку за спину, но от каждой заявки в куче идёт свой провод: клубок и есть хаос.
+     Сами провода рисуются один раз и больше не трогаются; точки — отдельные элементы, которые двигает transform.
+     Так браузер не перерисовывает каждый кадр весь слой проводов со свечением, и экран не подтормаживает */
   useEffect(() => {
-    const svg = svgRef.current, hero = heroRef.current;
+    const svg = svgRef.current, dots = dotsRef.current, hero = heroRef.current;
     let runs = [], raf = 0, timer = 0;
+    const seeds = wireSeeds.current;
     const mk = (cls, tag = 'path') => { const e = document.createElementNS(NS, tag); e.setAttribute('class', cls); svg.appendChild(e); return e; };
     const build = () => {
-      svg.replaceChildren(); runs = [];
+      svg.replaceChildren(); dots.replaceChildren(); runs = [];
       if (matchMedia('(max-width: 1000px)').matches || !listInRef.current) return;
       const hr = hero.getBoundingClientRect(), ar = archRef.current.getBoundingClientRect();
       svg.setAttribute('viewBox', `0 0 ${hr.width} ${hr.height}`);
       const rel = (r) => ({ l: r.left - hr.left, r: r.right - hr.left, y: r.top - hr.top + r.height / 2 });
-      const cy = anchor().y, aL = ar.left - hr.left, aR = ar.right - hr.left;
+      const man = !on && manRef.current, mIn = man && manPoint(MAN_IN), mOut = man && manPoint(MAN_OUT);
+      const cy = man ? 0 : anchor().y, aL = ar.left - hr.left, aR = ar.right - hr.left;
+      // у человека проводов больше (список и куча), поэтому веер общий: шаг между концами не меньше, чем позволяет его спина
+      const nIn = listInRef.current.children.length + (man ? pile.length : 0);
+      const stepIn = man ? Math.min(22, (manRef.current.parentElement.offsetHeight * MAN_FAN) / Math.max(1, nIn - 1)) : 22;
+      const into = (i) => (man ? [mIn.x, mIn.y + (i - (nIn - 1) / 2) * stepIn] : [aL, cy + (i - (nIn - 1) / 2) * 22]);
+      const from = (i, n) => (man ? [mOut.x, mOut.y + (i - (n - 1) / 2) * 22] : [aR, cy + (i - (n - 1) / 2) * 22]);
       const wire = (x1, y1, x2, y2, cls) => {
-        const dx = (x2 - x1) * 0.5, p = mk('hl ' + cls);
-        p.setAttribute('d', `M${x1},${y1} C${x1 + dx},${y1} ${x2 - dx},${y2} ${x2},${y2}`);
-        const c = mk('hl-run ' + cls, 'circle'); c.setAttribute('r', 3);
-        runs.push({ p, c, len: p.getTotalLength(), off: Math.random(), speed: 0.00013 + Math.random() * 0.00008, red: cls === 'is-red' });
+        const dx = (x2 - x1) * 0.5, d = `M${x1},${y1} C${x1 + dx},${y1} ${x2 - dx},${y2} ${x2},${y2}`;
+        // свечение провода — две широкие полупрозрачные линии под ним: выглядит как ореол, а стоит как обычная линия
+        mk('hl hl-glow is-wide ' + cls).setAttribute('d', d); mk('hl hl-glow ' + cls).setAttribute('d', d);
+        const p = mk('hl ' + cls); p.setAttribute('d', d);
+        const c = document.createElement('i'); c.className = 'hl-run ' + cls; dots.appendChild(c);
+        // фаза и скорость точки закреплены за номером провода: когда провода перестраиваются, точки не прыгают
+        const k = runs.length, seed = seeds[k] || (seeds[k] = { off: Math.random(), speed: 0.00013 + Math.random() * 0.00008 });
+        runs.push({ p, c, len: p.getTotalLength(), ...seed, red: cls.startsWith('is-red') });
       };
-      [...listInRef.current.children].forEach((li, i, arr) => { const a = rel(li.getBoundingClientRect()); wire(a.r, a.y, aL, cy + (i - (arr.length - 1) / 2) * 22, 'is-red'); });
-      [...listOutRef.current.children].forEach((li, i, arr) => { const b = rel(li.getBoundingClientRect()); wire(aR, cy + (i - (arr.length - 1) / 2) * 22, b.l, b.y, 'is-green'); });
+      [...listInRef.current.children].forEach((li, i, arr) => { const a = rel(li.getBoundingClientRect()); wire(a.r, a.y, ...into(i), 'is-red'); });
+      [...listOutRef.current.children].forEach((li, i, arr) => { const b = rel(li.getBoundingClientRect()); wire(...from(i, arr.length), b.l, b.y, 'is-green'); });
+      // куча: место каждой карточки известно из её данных, поэтому не ждём, пока она долетит
+      if (man && pile.length) {
+        const sr = listInRef.current.parentElement.getBoundingClientRect(), h = listInRef.current.firstElementChild ? listInRef.current.firstElementChild.offsetHeight : 70;
+        pile.forEach((p, i) => {
+          const a = (p.r * Math.PI) / 180, cx = sr.left - hr.left + p.x + sr.width / 2, cyp = sr.top - hr.top + (sr.height * p.top) / 100 + h / 2;
+          wire(cx + Math.cos(a) * sr.width / 2, cyp + Math.sin(a) * sr.width / 2, ...into(listInRef.current.children.length + i), 'is-red is-pile');
+        });
+      }
     };
     const later = (ms = 60) => { clearTimeout(timer); timer = setTimeout(build, ms); };
     const loop = (now) => {
       raf = requestAnimationFrame(loop);
       if (calm || !S.current.visible || document.hidden) return;
-      const k = S.current.on ? 2.4 : 0.35;
+      const k = S.current.on ? 3.2 : 0.35;
       runs.forEach((a) => {
         if (!S.current.on && !a.red) { a.c.style.opacity = 0; return; }
         const u = (a.off + now * a.speed * k) % 1, pt = a.p.getPointAtLength(a.len * u);
-        a.c.setAttribute('cx', pt.x); a.c.setAttribute('cy', pt.y);
+        a.c.style.transform = `translate(${pt.x.toFixed(1)}px, ${pt.y.toFixed(1)}px)`;
         a.c.style.opacity = Math.sin(Math.PI * u);
       });
     };
@@ -206,17 +273,18 @@ export default function Hero() {
     later(700); // карточки сначала встают на место
     raf = requestAnimationFrame(loop);
     return () => { ro.disconnect(); clearTimeout(timer); cancelAnimationFrame(raf); };
-  }, [calm, inbox.length, out.length]);
+  }, [calm, on, pile, inbox.length, out.length, manual.length]);
 
-  const hint = tried === 0 ? 'Нажмите «Вручную» и сравните' : tried === 1 ? 'А теперь верните агентов' : '';
+  const hint = tried === 0 ? 'Выключите агента и сравните' : tried === 1 ? 'А теперь включите обратно' : '';
   const fly = { x: { ease: [0.5, 0, 0.9, 0.7] }, y: { ease: [0.3, 0, 0.6, 1] }, scale: { ease: [0.5, 0, 0.8, 0.6] } };
 
   return (
     <section className="hero" id="hero" ref={heroRef} data-mode={on ? 'on' : 'off'}>
       <svg className="hflow" ref={svgRef} aria-hidden="true" />
+      <div className="hflow hflow-dots" ref={dotsRef} aria-hidden="true" />
 
       <h1 className="h-title">
-        <span className="h-t1">Пока вы разбираете заявки,</span>{' '}
+        <span className="h-t1">Пока ваш менеджер скучает,</span>{' '}
         <span className="h-t2">
           <AnimatePresence mode="wait" initial={false}>
             <motion.span key={on ? 'on' : 'off'} className="h-swap"
@@ -231,17 +299,14 @@ export default function Hero() {
       <div className="h-stage" ref={archRef}>
         <div className="h-switch">
           <span className="cap h-state">{on ? 'агент включён' : 'агент выключен'}</span>
-          <div className="seg" role="radiogroup" aria-label="Как работает бизнес" onKeyDown={segKey}>
-            <button type="button" role="radio" id="segOff" aria-checked={!on} tabIndex={on ? -1 : 0} onClick={() => setMode(false)}>
-              {!on && <motion.span layoutId="seg-thumb" className="seg-thumb" transition={SPRING} />}<Icon name="clock" /><span>Вручную</span>
-            </button>
-            <button type="button" role="radio" id="segOn" aria-checked={on} tabIndex={on ? 0 : -1} onClick={() => setMode(true)}>
-              {on && <motion.span layoutId="seg-thumb" className="seg-thumb" transition={SPRING} />}<Icon name="bolt" /><span>С агентами</span>
-            </button>
-          </div>
+          <button type="button" role="switch" className="tgl" aria-checked={on} aria-label="Агент" onClick={() => setMode(!on)}>
+            <span className="tgl-label is-on" aria-hidden="true">С агентами</span>
+            <span className="tgl-label is-off" aria-hidden="true">Вручную</span>
+            <span className="tgl-knob" aria-hidden="true"><Icon name="bolt" /><Icon name="clock" /></span>
+          </button>
           <span className="h-hint" aria-hidden="true">{hint}</span>
         </div>
-        <div className="m-wrap" aria-hidden="true"><canvas className="mascot" ref={canvasRef} /></div>
+        <div className="m-wrap" aria-hidden="true"><canvas className="mascot" ref={canvasRef} /><div className="m-man"><img src={manTired} alt="" width="1100" height="710" decoding="async" /><canvas ref={manRef} /></div></div>
         <AnimatePresence>
           {!ready && (
             <motion.div className="m-load" role="status" exit={{ opacity: 0 }} transition={{ duration: 0.4 }}>
@@ -255,6 +320,7 @@ export default function Hero() {
 
       <aside className="h-side h-in" aria-label="Входящие заявки">
         <header className="h-head"><span className="cap">Входящие</span><motion.b key={counts.in} initial={calm ? false : { scale: 1.25 }} animate={{ scale: 1 }}>{counts.in}</motion.b></header>
+        <div className="h-stack">
         <ul className="h-list" ref={listInRef}>
           <AnimatePresence mode="popLayout" initial={false}>
             {inbox.map(({ id, lead }) => (
@@ -267,16 +333,37 @@ export default function Hero() {
             ))}
           </AnimatePresence>
         </ul>
+        <ul className="h-pile" aria-hidden="true">
+          <AnimatePresence>
+            {pile.map((p, i) => (
+              <motion.li key={p.id} className="lead lead-in lead-pile" style={{ top: `${p.top}%`, zIndex: i }}
+                initial={calm ? false : { opacity: 0, x: p.x - 24, y: -70, rotate: p.r * 2.2, scale: 1.06 }}
+                animate={{ opacity: 1, x: p.x, y: 0, rotate: p.r, scale: 1 }}
+                exit={calm ? { opacity: 0 } : { opacity: 0, x: S.current.vis < VISIBLE ? 0 : 240, y: S.current.vis < VISIBLE ? 160 : 20, rotate: 0, scale: 0.2, transition: { duration: 0.4, delay: i * 0.045, ease: [0.5, 0, 0.9, 0.7] } }}
+                transition={{ type: 'spring', stiffness: 260, damping: 20 }}>
+                <LeadIn lead={p.lead} />
+              </motion.li>
+            ))}
+          </AnimatePresence>
+        </ul>
+        </div>
         <p className="h-foot"><span>Получаем заявок в месяц</span><b>247</b></p>
       </aside>
 
       <aside className="h-side h-out" aria-label="Обработанные лиды">
-        <header className="h-head"><span className="cap">Обработано</span><motion.b key={counts.out} initial={calm ? false : { scale: 1.25 }} animate={{ scale: 1 }}>{counts.out}</motion.b></header>
+        <header className="h-head"><span className="cap">Обработано</span><motion.b key={on ? counts.out : `m${doneManual.current}`} initial={calm ? false : { scale: 1.25 }} animate={{ scale: 1 }}>{on ? counts.out : doneManual.current}</motion.b></header>
         <ul className="h-list" ref={listOutRef}>
           <AnimatePresence mode="popLayout" initial={false}>
-            {out.map(({ id, o }) => (
+            {(on ? out : manual).map(({ id, o }) => (
               <motion.li key={id} layout transition={SPRING} className="lead lead-out" initial={calm ? { opacity: 0 } : false} animate={{ opacity: 1 }} exit={{ opacity: 0, transition: { duration: 0.15 } }}>
                 <LeadOut o={o} />
+              </motion.li>
+            ))}
+            {!on && Array.from({ length: Math.max(0, S.current.vis - manual.length) }, (_, i) => (
+              <motion.li key={`slot${i}`} layout transition={SPRING} className={`lead lead-out lead-slot${i ? ' is-blank' : ''}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, transition: { duration: 0.15 } }}>
+                <span className="lead-av"><Icon name="clock" /></span>
+                <span className="lead-main"><span className="lead-top"><b>Ждёт ответа</b></span><span className="lead-text">Руки ещё не дошли</span></span>
+                <span className="cap lead-st">В очереди</span>
               </motion.li>
             ))}
           </AnimatePresence>
@@ -286,7 +373,6 @@ export default function Hero() {
 
       <div className="h-cta">
         <a className="btn btn-main" href="#demo">Попробовать на своей заявке <Icon name="arrowUR" /></a>
-        <span className="h-note">Цифры на этом экране условные</span>
       </div>
 
       <ul className="h-fly" aria-hidden="true">

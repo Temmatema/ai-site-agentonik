@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { PRODUCTS } from '../data/products.js';
 import Icon from './Icon.jsx';
 import Title from './Title.jsx';
+import Glow from './Glow.jsx';
 
 const CARDS = [
   { name: 'ИИ-агенты', text: 'Отвечают клиентам, разбирают заявки и почту, собирают отчёты, обновляют CRM. Работают круглосуточно и передают вам только важное.', list: ['Заявки и поддержка', 'Отчёты и сводки', 'Интеграции с CRM'] },
@@ -41,7 +42,8 @@ export default function Products() {
   };
 
   return (
-    <section className="section products" id="products">
+    <section className="section products has-glow" id="products">
+      <Glow variant="c" />
       <div className="wrap">
         <div className="prod-head">
           <Title>Три продукта, которые <em>снимают рутину</em></Title>

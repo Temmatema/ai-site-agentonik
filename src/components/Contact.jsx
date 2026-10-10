@@ -7,6 +7,7 @@ import { SOLUTIONS, AUDIT, RULES } from '../data/contact.js';
 import { useTask } from '../task.js';
 import Icon from './Icon.jsx';
 import Title from './Title.jsx';
+import Glow from './Glow.jsx';
 
 const STEPS = ['Контакты', 'Задача', 'Решения'];
 const PROMISES = [['Ответим', 'в течение 1 часа'], ['Подберём решения', 'под ваш кейс'], ['Рассчитаем', 'потенциальную выгоду']];
@@ -42,7 +43,8 @@ export default function Contact() {
   const aria = (n) => ({ 'aria-invalid': bad.includes(n) || undefined, 'aria-describedby': bad.includes(n) ? `err-${n}` : undefined });
 
   return (
-    <section className="section contact" id="contact">
+    <section className="section contact has-glow" id="contact">
+      <Glow variant="f" />
       <div className="wrap contact-grid">
         <div className="c-left">
           <Title>Расскажите, где у вас тонет <em>команда</em></Title>

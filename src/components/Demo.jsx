@@ -7,6 +7,7 @@ import { PRESETS, CHANNELS, STEP_DEFS, analyze, buildPlan, sleep, fmtSec, tween 
 import { useTask } from '../task.js';
 import Icon from './Icon.jsx';
 import Title from './Title.jsx';
+import Glow from './Glow.jsx';
 
 const STEPS = [{ icon: 'search', title: 'Понимает запрос' }, ...STEP_DEFS.map((d) => ({ icon: d.icon, title: d.title.replace(/^\d+\.\s*/, '') }))];
 const idle = () => STEPS.map(() => ({ state: 'idle', time: '', detail: '' }));
@@ -67,7 +68,8 @@ export default function Demo() {
   const finished = steps.filter((s) => s.state === 'done' || s.state === 'skip').length;
 
   return (
-    <section className="section demo" id="demo">
+    <section className="section demo has-glow" id="demo">
+      <Glow variant="a" />
       <div className="wrap demo-grid">
         <div className="demo-left">
           <Title>Отдайте агенту заявку и посмотрите, <em>что он делает</em></Title>

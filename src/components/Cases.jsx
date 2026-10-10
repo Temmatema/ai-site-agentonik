@@ -1,15 +1,31 @@
-// Блок «Кейсы»: ряд карточек с рисованными обложками; выбранный кейс раскрывается под рядом:
-// задача, что сделали, результат «было → стало».
+// Блок «Кейсы»: карточки с рисованными обложками сложены колодой и по мере прокрутки раскрываются веером;
+// выбранный кейс выходит вперёд и раскрывается под веером: задача, что сделали, результат «было → стало».
+// На узких экранах веер не помещается, там карточки идут горизонтальной лентой.
 // ВАЖНО: кейсы условные, это заготовка формата. Замените CASES в data/cases.js на реальные данные.
 // Обложка: если у кейса есть поле img (путь к картинке), показывается она, иначе рисованный макет.
-import { useRef, useState } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { useEffect, useRef, useState } from 'react';
+import { AnimatePresence, motion, useMotionValue, useReducedMotion, useScroll, useSpring, useTransform } from 'motion/react';
 import { CASES } from '../data/cases.js';
 import { useTask } from '../task.js';
 import Icon from './Icon.jsx';
 import Title from './Title.jsx';
+import Glow from './Glow.jsx';
 
 const EASE = [0.2, 0.8, 0.2, 1];
+const STEP = 10;   // угол между соседними карточками веера, в градусах
+const RADIUS = 1400; // радиус дуги, по которой они расходятся: центр окружности далеко под карточками
+const WIDE = '(min-width: 1001px)';
+
+// карточка веера: p — насколько веер раскрыт (0 — колода, 1 — раскрыт). Карточка едет по дуге и поворачивается вместе с ней
+function FanCard({ i, n, p, fan, children }) {
+  const k = i - (n - 1) / 2;
+  const rad = (v) => (k * STEP * v * Math.PI) / 180;
+  const rotate = useTransform(p, (v) => k * STEP * v);
+  const x = useTransform(p, (v) => RADIUS * Math.sin(rad(v)));
+  const y = useTransform(p, (v) => 90 * (1 - v) + RADIUS * (1 - Math.cos(rad(v))));
+  const opacity = useTransform(p, [0, 0.3], [0, 1]);
+  return <motion.div className="cs-fan" style={fan ? { rotate, x, y, opacity, zIndex: Math.round(10 - Math.abs(k) * 2) } : undefined}>{children}</motion.div>;
+}
 
 /* рисованные обложки-макеты: стоят на месте будущих скриншотов */
 const MOCK = {
@@ -22,7 +38,18 @@ const MOCK = {
 export default function Cases() {
   const { prefill } = useTask();
   const [open, setOpen] = useState(null);
-  const detail = useRef(null);
+  const detail = useRef(null), track = useRef(null);
+  const calm = useReducedMotion();
+  const [fan, setFan] = useState(() => matchMedia(WIDE).matches);
+  useEffect(() => {
+    const mq = matchMedia(WIDE), on = () => setFan(mq.matches);
+    mq.addEventListener('change', on);
+    return () => mq.removeEventListener('change', on);
+  }, []);
+  // веер раскрывается, пока его верх проходит путь от низа экрана до верхней трети
+  const { scrollYProgress } = useScroll({ target: track, offset: ['start 0.95', 'start 0.3'] });
+  const soft = useSpring(scrollYProgress, { stiffness: 90, damping: 22 }), full = useMotionValue(1);
+  const p = calm ? full : soft;
   const c = open === null ? null : CASES[open];
   const toggle = (i) => {
     setOpen((v) => (v === i ? null : i));
@@ -31,22 +58,25 @@ export default function Cases() {
   };
 
   return (
-    <section className="section cases" id="cases">
+    <section className="section cases has-glow" id="cases">
+      <Glow variant="d" />
       <div className="wrap">
         <div className="cs-head">
           <Title>Как это работает <em>у других</em></Title>
           <p className="cs-warn"><Icon name="alert" />Примеры условные и показывают формат: реальные кейсы появятся здесь позже.</p>
         </div>
 
-        <div className="cs-track">
+        <div className="cs-track" ref={track}>
           {CASES.map((k, i) => (
-            <button key={k.title} type="button" className="cs-card" aria-expanded={open === i} aria-controls="csDetail" onClick={() => toggle(i)}>
+            <FanCard key={`${k.title}-${fan}`} i={i} n={CASES.length} p={p} fan={fan}>
+            <button type="button" className="cs-card" aria-expanded={open === i} aria-controls="csDetail" onClick={() => toggle(i)}>
               <span className="cs-cover" data-cover={k.cover}>{k.img ? <img src={k.img} alt="" loading="lazy" /> : MOCK[k.cover]}</span>
               <span className="cs-tags"><span className="cap">{k.tag}</span><span className="cap">{k.product}</span></span>
               <span className="cs-title">{k.title}</span>
               <span className="cs-key"><b>{k.key[0]}</b><span>{k.key[1]}</span></span>
               <span className="cs-more">{open === i ? 'Свернуть' : 'Смотреть кейс'}<Icon name="arrowUR" /></span>
             </button>
+            </FanCard>
           ))}
         </div>
 

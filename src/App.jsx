@@ -1,4 +1,6 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import Lenis from 'lenis';
+import 'lenis/dist/lenis.css';
 import { MotionConfig, motion, useScroll } from 'motion/react';
 import Nav from './components/Nav.jsx';
 import Hero from './components/Hero.jsx';
@@ -21,6 +23,14 @@ export default function App() {
   const type = useCallback((text) => setTask({ text, auto: false }), []);
   const ctx = useMemo(() => ({ task: task.text, prefill, type }), [task.text, prefill, type]);
   const { scrollYProgress } = useScroll();
+
+  // плавная прокрутка колесом: страница доезжает с инерцией, а не прыгает шагами. Якоря из меню едут так же,
+  // отступ под шапку берётся из scroll-padding-top в стилях. На тачскринах прокрутка остаётся родной; при «меньше движения» не включаем вовсе
+  useEffect(() => {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined;
+    const lenis = new Lenis({ autoRaf: true, lerp: 0.09, wheelMultiplier: 0.9, anchors: true });
+    return () => lenis.destroy();
+  }, []);
 
   return (
     <MotionConfig reducedMotion="user">
