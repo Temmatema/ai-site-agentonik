@@ -16,7 +16,7 @@ const Chan = ({ name }) => { const c = CHANNELS[name] || CHANNELS['Сайт']; r
 export default function Demo() {
   const calm = useReducedMotion();
   const { prefill } = useTask();
-  const runId = useRef(0), textRef = useRef(null);
+  const runId = useRef(0), textRef = useRef(null), runRef = useRef(null);
   const [preset, setPreset] = useState(0);
   const [text, setText] = useState(PRESETS[0].text);
   const [channel, setChannel] = useState(PRESETS[0].channel);
@@ -36,6 +36,8 @@ export default function Demo() {
     reset();
     const my = runId.current, alive = () => my === runId.current;
     setBusy(true);
+    // на телефоне журнал стоит под заявкой: подводим его под взгляд, чтобы шаги шли на экране
+    if (matchMedia('(max-width: 1000px)').matches && runRef.current) runRef.current.scrollIntoView({ behavior: calm ? 'auto' : 'smooth', block: 'start' });
     const a = analyze(src), P = buildPlan(a, channel), t0 = performance.now();
 
     // шаг 1: понимает запрос, метки появляются по одной
@@ -88,7 +90,7 @@ export default function Demo() {
           </article>
         </div>
 
-        <div className="run" data-done={result ? '' : undefined}>
+        <div className="run" ref={runRef} data-done={result ? '' : undefined}>
           <div className="run-list">
           <div className="run-rail" aria-hidden="true"><motion.i animate={{ scaleY: finished / STEPS.length }} transition={{ duration: 0.5, ease: [0.2, 0.8, 0.2, 1] }} /></div>
           <ol className="run-steps">

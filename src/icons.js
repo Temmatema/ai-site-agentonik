@@ -40,6 +40,7 @@ export const ICONS = {
   lock: '<rect x="5" y="11" width="14" height="10" rx="3"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
   arrowUR: '<path d="M7 17 17 7M9 7h8v8"/>',
   banner: '<rect x="3" y="7" width="18" height="10" rx="2.5"/><path d="M7 12h6"/>',
+  replay: '<path d="M4.5 12a7.5 7.5 0 1 0 2.4-5.5"/><path d="M4.5 4v4.5H9"/>',
 };
 
 export const ico = (n, cls = '') =>

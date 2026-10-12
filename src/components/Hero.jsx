@@ -98,8 +98,8 @@ export default function Hero() {
   const anchor = (side = 'in') => {
     if (!S.current.on && manRef.current) return manPoint(side === 'in' ? MAN_KEYS : MAN_LID);
     if (mascot.current) return mascot.current.anchor();
-    const hr = heroRef.current.getBoundingClientRect(), r = archRef.current.getBoundingClientRect();
-    return { x: r.left - hr.left + r.width / 2, y: r.top - hr.top + r.height * 0.7 };
+    const hr = heroRef.current.getBoundingClientRect(), r = canvasRef.current.parentElement.getBoundingClientRect();
+    return { x: r.left - hr.left + r.width / 2, y: r.top - hr.top + r.height * 0.62 };
   };
 
   /* заявка: красная карточка улетает в маскота, на её место приходит новая, зелёная вылетает справа */
@@ -306,16 +306,20 @@ export default function Hero() {
           </button>
           <span className="h-hint" aria-hidden="true">{hint}</span>
         </div>
-        <div className="m-wrap" aria-hidden="true"><canvas className="mascot" ref={canvasRef} /><div className="m-man"><img src={manTired} alt="" width="1100" height="710" decoding="async" /><canvas ref={manRef} /></div></div>
-        <AnimatePresence>
-          {!ready && (
-            <motion.div className="m-load" role="status" exit={{ opacity: 0 }} transition={{ duration: 0.4 }}>
-              <span className="cap">агент просыпается</span>
-              <span className="m-load-bar"><i style={{ transform: `scaleX(${load})` }} /></span>
-              <span className="m-load-n">{Math.round(load * 100)}%</span>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* индикатор загрузки лежит внутри блока маскота: на телефоне сцена разбирается на части, и он остаётся на месте зверька */}
+        <div className="m-wrap">
+          <canvas className="mascot" ref={canvasRef} aria-hidden="true" />
+          <div className="m-man" aria-hidden="true"><img src={manTired} alt="" width="1100" height="710" decoding="async" /><canvas ref={manRef} /></div>
+          <AnimatePresence>
+            {!ready && (
+              <motion.div className="m-load" role="status" exit={{ opacity: 0 }} transition={{ duration: 0.4 }}>
+                <span className="cap">агент просыпается</span>
+                <span className="m-load-bar"><i style={{ transform: `scaleX(${load})` }} /></span>
+                <span className="m-load-n">{Math.round(load * 100)}%</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
 
       <aside className="h-side h-in" aria-label="Входящие заявки">

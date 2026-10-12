@@ -1,5 +1,6 @@
 // Блок «Кейсы»: карточки с рисованными обложками сложены колодой и по мере прокрутки раскрываются веером;
-// выбранный кейс выходит вперёд и раскрывается под веером: задача, что сделали, результат «было → стало».
+// низ веера срезан краем блока. При наведении остальные карточки разъезжаются в стороны от выбранной;
+// открытый кейс раскрывается под веером: задача, что сделали, результат «было → стало».
 // На узких экранах веер не помещается, там карточки идут горизонтальной лентой.
 // ВАЖНО: кейсы условные, это заготовка формата. Замените CASES в data/cases.js на реальные данные.
 // Обложка: если у кейса есть поле img (путь к картинке), показывается она, иначе рисованный макет.
@@ -12,19 +13,27 @@ import Title from './Title.jsx';
 import Glow from './Glow.jsx';
 
 const EASE = [0.2, 0.8, 0.2, 1];
-const STEP = 10;   // угол между соседними карточками веера, в градусах
-const RADIUS = 1400; // радиус дуги, по которой они расходятся: центр окружности далеко под карточками
+const STEP = 12;   // угол между соседними карточками веера, в градусах
+const SPREAD = 5;  // на столько градусов остальные отъезжают от карточки, на которую навели: она открывается целиком
+const PIVOT = 3.2; // центр дуги лежит под карточкой: расстояние от её низа в ширинах карточки
 const WIDE = '(min-width: 1001px)';
 
-// карточка веера: p — насколько веер раскрыт (0 — колода, 1 — раскрыт). Карточка едет по дуге и поворачивается вместе с ней
-function FanCard({ i, n, p, fan, children }) {
+// карточка веера: p — насколько веер раскрыт (0 — колода, 1 — раскрыт). Карточка поворачивается вокруг точки далеко под собой
+// и поэтому едет по дуге. active — номер карточки, на которую навели или которую открыли: остальные разъезжаются от неё в стороны
+function FanCard({ i, n, p, fan, active, calm, children, ...over }) {
   const k = i - (n - 1) / 2;
-  const rad = (v) => (k * STEP * v * Math.PI) / 180;
-  const rotate = useTransform(p, (v) => k * STEP * v);
-  const x = useTransform(p, (v) => RADIUS * Math.sin(rad(v)));
-  const y = useTransform(p, (v) => 90 * (1 - v) + RADIUS * (1 - Math.cos(rad(v))));
+  const to = active === null || active === i ? 0 : Math.sign(i - active) * SPREAD;
+  const push = useSpring(0, { stiffness: 60, damping: 19 }); // мягкая пружина без отскока: карточки отъезжают и возвращаются плавно
+  useEffect(() => { if (calm) push.jump(to); else push.set(to); }, [to, calm, push]);
+  const rotate = useTransform([p, push], ([v, s]) => k * STEP * v + s);
+  const y = useTransform(p, (v) => 90 * (1 - v));
   const opacity = useTransform(p, [0, 0.3], [0, 1]);
-  return <motion.div className="cs-fan" style={fan ? { rotate, x, y, opacity, zIndex: Math.round(10 - Math.abs(k) * 2) } : undefined}>{children}</motion.div>;
+  return (
+    <motion.div className={`cs-fan${active === i ? ' is-active' : ''}`} {...over}
+      style={fan ? { rotate, y, opacity, zIndex: Math.round(10 - Math.abs(k) * 2), '--pivot': PIVOT } : undefined}>
+      {children}
+    </motion.div>
+  );
 }
 
 /* рисованные обложки-макеты: стоят на месте будущих скриншотов */
@@ -38,6 +47,7 @@ const MOCK = {
 export default function Cases() {
   const { prefill } = useTask();
   const [open, setOpen] = useState(null);
+  const [hover, setHover] = useState(null);
   const detail = useRef(null), track = useRef(null);
   const calm = useReducedMotion();
   const [fan, setFan] = useState(() => matchMedia(WIDE).matches);
@@ -68,7 +78,9 @@ export default function Cases() {
 
         <div className="cs-track" ref={track}>
           {CASES.map((k, i) => (
-            <FanCard key={`${k.title}-${fan}`} i={i} n={CASES.length} p={p} fan={fan}>
+            <FanCard key={`${k.title}-${fan}`} i={i} n={CASES.length} p={p} fan={fan} calm={calm} active={hover ?? open}
+              onPointerEnter={() => setHover(i)} onPointerLeave={() => setHover((h) => (h === i ? null : h))}
+              onFocus={() => setHover(i)} onBlur={() => setHover((h) => (h === i ? null : h))}>
             <button type="button" className="cs-card" aria-expanded={open === i} aria-controls="csDetail" onClick={() => toggle(i)}>
               <span className="cs-cover" data-cover={k.cover}>{k.img ? <img src={k.img} alt="" loading="lazy" /> : MOCK[k.cover]}</span>
               <span className="cs-tags"><span className="cap">{k.tag}</span><span className="cap">{k.product}</span></span>

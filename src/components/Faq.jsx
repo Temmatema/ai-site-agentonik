@@ -16,7 +16,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 export default function Faq() {
   const calm = useReducedMotion();
   const { prefill } = useTask();
-  const box = useRef(null), uid = useRef(1), st = useRef({ answered: 0, offered: false, alive: true });
+  const box = useRef(null), chat = useRef(null), uid = useRef(1), st = useRef({ answered: 0, offered: false, alive: true });
   const [msgs, setMsgs] = useState([{ id: 0, who: 'bot', text: HELLO }]);
   const [asked, setAsked] = useState([]);
   const [busy, setBusy] = useState(false);
@@ -40,6 +40,8 @@ export default function Faq() {
   async function ask(text, item) {
     if (busy) return;
     setBusy(true);
+    // на телефоне чат стоит под списком вопросов: подводим его под взгляд, иначе ответ появится за экраном
+    if (matchMedia('(max-width: 1000px)').matches && chat.current && chat.current.getBoundingClientRect().bottom > window.innerHeight) chat.current.scrollIntoView({ behavior: calm ? 'auto' : 'smooth', block: 'end' });
     setMsgs((m) => [...m, { id: uid.current++, who: 'user', text }]);
     const found = item || FAQ.find((f) => f.re.test(text));
     if (found) {
@@ -77,7 +79,7 @@ export default function Faq() {
           </div>
         </div>
 
-        <div className="faq-chat">
+        <div className="faq-chat" ref={chat}>
           <header className="faq-head"><img className="faq-bot" src={bot} alt="" width="40" height="48" /><div><b>Агент</b><span className="cap">онлайн, отвечает сразу</span></div></header>
           <div className="faq-msgs" ref={box} aria-live="polite" data-lenis-prevent>
             {msgs.map((m) => (
