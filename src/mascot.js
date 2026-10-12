@@ -28,8 +28,6 @@ const MAN_TURN = 1.28;          // то же для человека: 1.28 — �
 const IDLE = [0.5, 0, 0.5, 1];  // без курсора позы идут по кругу: прямо, влево, прямо, вправо
 const IDLE_HOLD = 3;            // и в каждой маскот задерживается на столько секунд
 const PARK = 5;                 // курсор не двигался столько секунд — маскот перестаёт на него смотреть и снова живёт сам
-// за курсором маскот следит только там, где это имеет смысл: есть мышь и первый экран стоит в три колонки (заявки слева и справа от него)
-const FOLLOW = '(hover: hover) and (pointer: fine) and (min-width: 1001px)';
 const MID = 0.36;               // курсор не дальше этого от середины — маскот смотрит прямо (это примерно ширина его колонки)
 const DEAD = 0.05;              // мёртвая зона на границах, чтобы маскот не дёргался, когда курсор стоит прямо на них
 const SMOOTH_OFF = 0.8;         // за сколько секунд маскот закрывает глаза в режиме «Вручную»
@@ -100,7 +98,7 @@ export async function createMascot(canvas, hero, onProgress = () => {}, manCanva
 
   /* состояние */
   let t = 0, idle = 0, last = 0, side = 0.5, sideMan = 1, turn = 0.5, turnMan = 1, shown = 0.5, drawMan = null, dead = false, on = true, glow = 0, pulseT = 0, lookX = 0, running = true, visible = true, raf = 0;
-  const pointer = { x: 0, inside: false, at: 0 }, follow = matchMedia(FOLLOW);
+  const pointer = { x: 0, inside: false, at: 0 };
   const [ci, ck] = locate(table, CLOSED), closed = table[ck > 0.5 ? Math.min(ci + 1, table.length - 1) : ci];
 
   function update(dt) {
@@ -109,8 +107,9 @@ export async function createMascot(canvas, hero, onProgress = () => {}, manCanva
     glow = damp(glow, Math.min(1, pulseT), 9, dt);
 
     // поза: курсор слева — косится влево, справа — разворачивается вправо, над маскотом — смотрит прямо.
-    // Без мыши, на телефоне и планшете, и когда курсор давно стоит на месте, позы идут по кругу, начиная со взгляда прямо
-    const led = pointer.inside && follow.matches && t - pointer.at < PARK;
+    // За мышью он следит при любой ширине окна. Без мыши (телефон, планшет) и когда курсор давно стоит на месте,
+    // позы идут по кругу, начиная со взгляда прямо
+    const led = pointer.inside && t - pointer.at < PARK;
     if (!led) { idle += dt; side = reduce ? 0.5 : IDLE[Math.floor(idle / IDLE_HOLD) % IDLE.length]; }
     else { idle = 0; if (pointer.x > MID + DEAD) side = 1; else if (pointer.x < -MID - DEAD) side = 0; else if (Math.abs(pointer.x) < MID - DEAD) side = 0.5; }
     // ролик идёт ровно, как в исходном видео: плавность движения в нём уже есть
